@@ -1,0 +1,543 @@
+//@ts-check
+import { ComponentsManager, html } from "../WDevCore/WModules/WComponentsTools.js";
+import { css } from "../WDevCore/WModules/WStyledRender.js";
+
+
+export class VisualNovelView extends HTMLElement {
+
+    constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+        this.append(this.ComponentStyle)
+        this.shadowRoot?.append(this.CustomStyle);
+        this.UI = this.BuildUI()
+        this.Draw();
+    }
+    connectedCallback() {
+        ComponentsManager.modalFunction(this);
+    }
+    Draw = async () => {
+        this.shadowRoot?.append(this.UI)
+    };
+    /**
+     * @param {string} uiElementId
+     */
+    GetUIElement(uiElementId) {
+        let uiElement = this.shadowRoot?.querySelector(`#${uiElementId}`);
+        return uiElement;
+    }
+    update() {
+        this.Draw();
+    }
+    BuildUI() {
+        return html`<div id="game-container">
+            <div id="background"></div>
+            <div id="character-sprites"></div>
+            <div id="text-container">
+                <div id="name-box"></div>
+                <div id="text-box"></div>
+            </div>
+            <div id="choices-container"></div>
+            <div id="global-choices-container-menu"></div>
+            <div id="choices-container-fullscreen"></div>
+            <div id="choices-container-menu"></div>
+            <div id="save-load-screen" class="save-load-screen">
+                <div class="save-load-grid" id="save-load-grid"></div>
+            </div>
+            <div id="game-time-display"></div>
+            <div id="character-view-container"></div>
+        </div>`
+    }
+    Connect() {
+        if (!this.isConnected) {
+            document.body.append(this);
+        }
+    }
+    Disconnect() {
+        if (this.isConnected) {
+            ComponentsManager.modalFunction(this);
+            setTimeout(() => {
+                this.parentNode?.removeChild(this);
+            }, 500);
+        }
+    }
+    ComponentStyle = css`
+      w-novel-view {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10001;
+            transition: all 1s;
+            background-color: #fff;
+            display: block;
+            height:100vh;
+        }
+  `
+    CustomStyle = css`
+        body {
+          padding: 0;
+          margin: 0;
+        }
+
+        * {
+          cursor: pointer;
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+          -webkit-touch-callout: none;
+          touch-action: manipulation;
+          font-family: Arial, Helvetica, sans-serif;
+          /* Mejora rendimiento en móvil */
+        }
+
+        #game-container {
+          position: relative;
+          width: 100vw;
+          /* Ocupa todo el ancho */
+          height: auto;
+          /* Altura ajustada según el aspect ratio */
+          aspect-ratio: 16 / 9;
+          max-width: 100%;
+          max-height: 100vh;
+          margin: 0 auto;
+          overflow: hidden;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background-color: black;
+          /* Fondo negro mientras se carga */
+        }
+
+        #game-time-display {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          color: white;
+          background: rgba(0, 0, 0, 0.5);
+          padding: 10px;
+          border-radius: 5px;
+          font-size: 14px;
+          z-index: 1000;
+        }
+
+        #background {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          background-size: cover;
+        }
+
+        #character-sprites {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          top: 0;
+          left: 0;
+        }
+
+        .character {
+          position: absolute;
+          height: 90%;
+          bottom: 0;
+        }
+
+        .left {
+          left: 0;
+        }
+
+        .center {
+          left: 50%;
+          transform: translateX(-50%);
+        }
+
+        .right {
+          right: 0;
+        }
+
+        #text-container {
+          position: absolute;
+          bottom: 0;
+          opacity: 0;
+
+          background: rgba(0, 0, 0, 0.2);
+          color: white;
+          padding: 20px;
+          box-sizing: border-box;
+          font-size: 20px;
+          font-family: Arial, Helvetica, sans-serif;
+          transition: all 0.5s;
+          margin: 20px;
+          box-sizing: border-box;
+          border-radius: 20px;
+          left: 20px;
+          bottom: 20px;
+          width: 50%;
+        }
+
+        #name-box {
+          font-weight: bold;
+          margin-bottom: 10px;
+          color: #1d5cf0;
+        }
+
+        #name-box.female {
+          color: #f01de2;
+        }
+
+        #choices-container2 {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin-top: 10px;
+          transition: all 0.5s;
+          position: absolute;
+          z-index: 10000;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          top: 0;
+          box-sizing: border-box;
+          padding: 10px;
+        }
+
+        #choices-container {
+          z-index: 1;
+        }
+
+        #choices-container .choice-button {
+          padding: 15px 30px;
+          color: white;
+          border: none;
+          cursor: pointer;
+          color: white;
+          border: none;
+          cursor: pointer;
+          justify-content: flex-end;
+          font-size: clamp(1rem, 2vw, 2rem);
+          color: #000;
+          background-color: rgba(255, 255, 255, 70%);
+          box-shadow: 0 0 5px 0 rgba(255, 255, 255, 0.1);
+          align-self: flex-end;
+          transition: all 0.5s;
+        }
+
+        #choices-container .choice-button:hover {
+          background-color: rgba(94, 94, 94, 0.7);
+          box-shadow: 0 0 5px 0 rgba(255, 255, 255, 0.1);
+          color: #fff;
+        }
+
+        /* Añade esto a tu hoja de estilos */
+        .choice-wrapper {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          opacity: 0;
+          transition: all 0.7s;
+        }
+
+        #choices-container-fullscreen,
+        #global-choices-container-menu {
+          & .menu-positioned-container {
+            position: absolute;
+            width: 100%;
+            top: 0;
+            left: 0;
+            height: 100%;
+
+            & .positioned-choice {
+              height: 80px;
+              display: flex;
+              width: 80px;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+              padding: 0px;
+
+              & img {
+                height: 90%;
+                object-fit: contain;
+              }
+            }
+          }
+
+        }
+
+
+
+        .btnlayout label {
+          border-radius: 5px;
+          padding: 5px;
+          background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .btnlayout img:hover {
+          filter: brightness(1.1);
+        }
+
+        .choice-wrapper.fade-out {
+          opacity: 0 !important;
+        }
+
+        .background-image {
+          transition: all 0.7s;
+        }
+
+
+
+        .btnlayout {
+          padding: 0;
+        }
+
+        .choice-button:hover {
+          background: rgba(255, 255, 255, 0.2);
+          ;
+        }
+
+        #text-box,
+        #name-box {
+          transition: all 0.3s ease;
+        }
+
+
+
+        #background {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+        }
+
+        .menu-wrapper {
+          transition: all 1s;
+        }
+
+        #choices-container .menu-tab-container {
+          position: absolute;
+          bottom: 20px;
+          right: 130px;
+          display: grid;
+          grid-auto-rows: auto;
+          gap: 10px;
+          justify-content: flex-end;
+          align-items: center;
+          z-index: 1000;
+
+          /* Opcional: para asegurar que aparezca sobre otros elementos */
+          & .menu-tab-item {
+            height: 80px;
+            display: flex;
+            width: 90px;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 0px;
+            overflow: hidden;
+            position: relative;
+
+            & img {
+              height: calc(100% - 30px);
+              width: 100%;
+              object-position: top;
+              object-fit: contain;
+            }
+
+            & label {
+              position: absolute;
+              bottom: 0;
+              background-color: #fff;
+              color: #111;
+              width: 100%;
+              font-size: 11px;
+              padding: 0px;
+              height: 30px;
+              text-align: center;
+              align-items: center;
+              display: flex;
+              justify-content: center;
+            }
+          }
+        }
+
+        .menu-container {
+          display: flex;
+          position: absolute;
+          flex-direction: column;
+          right: 100px;
+          transform: translateY(-50%);
+          top: 50%;
+          gap: 20px;
+
+          & .menu-item {
+            font-size: 35px;
+            font-family: Arial, Helvetica, sans-serif;
+            transition: all 0.5s;
+          }
+        }
+
+        .choice-button {
+          padding: 12px 20px;
+          background: rgba(0, 0, 0, 0.7);
+          color: white;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .menu-floating-container {
+          position: absolute;
+          top: 20px;
+          right: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          background-color: rgba(0, 0, 0, 0.7);
+          padding: 10px;
+          border-radius: 8px;
+          z-index: 1000;
+          width: 80px;
+        }
+
+        .menu-floating-item {
+          background-color: #333;
+          color: white;
+          border: none;
+          padding: 5px;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: background-color 0.5s ease;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          font-size: 10px;
+
+          & img {
+            height: 30px;
+            object-fit: cover;
+          }
+        }
+
+        .menu-floating-item:hover {
+          background-color: #555;
+        }
+
+        /*pantalla de carga*/
+
+        .save-load-screen {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.5);
+          display: none;
+          justify-content: center;
+          align-items: center;
+          z-index: 9999;
+        }
+
+        .save-load-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 250px);
+          gap: 20px;
+          justify-content: center;
+        }
+
+
+
+        .save-slot {
+            background-color: #222;
+            color: white;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            height: 180px;
+            overflow: hidden;
+            label {
+              padding: 5px;
+              display: block;
+            }
+            .background-image {
+              position: relative !important;
+            }
+        }
+        .return {
+          padding: 10px;
+          height: 20px;
+        }
+
+        .save-slot:hover {
+          background-color: #444;
+        }
+
+        .save-slot.empty {
+          background-color: #111;
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .default-choice-wrapper {
+          width: 50%;
+          min-width: 50px;
+          top: 30%;
+          right: 150px;
+          position: absolute;
+        }
+
+        .text-box {
+          opacity: 0;
+          transition: opacity 0.5s ease-in-out;
+        }
+        .show {
+          opacity: 1;
+          pointer-events: all;
+        }
+
+        /* video.character {
+          mix-blend-mode: multiply;
+          filter: brightness(0.8) contrast(1.2) saturate(1.5);
+        } */
+
+        .character.visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .character.left {
+          left: 10%;
+        }
+
+        .character.center {
+          left: 50%;
+          transform: translateX(-50%) translateY(0);
+        }
+
+        .character.right {
+          right: 10%;
+        }
+
+        .character.hiding {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+
+        .background-image.fade-out {
+          opacity: 0;
+        }
+
+        w-oppenworld-component {
+          padding: 50px 130px 0px 0px;
+          box-sizing: border-box;
+          background-color: #111;
+        }           
+  `;
+}
+customElements.define('w-novel-view', VisualNovelView);

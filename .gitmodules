@@ -1,0 +1,4 @@
+[submodule "Core/WDevCore"]
+	path = Core/WDevCore
+	url = https://github.com/Wilber1987/WDevCore
+	branch = main
