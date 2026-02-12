@@ -47,7 +47,7 @@ Iniciar el Proyecto
 
 En app.js:
 
-```
+```javascript
 import { vnEngine } from "./Core/VisualNovelEngine.js";
 import { Scene, Flow, Dialogue } from "./Core/VisualNovelModules.js";
 import { Dana } from "./Characters/Dana.js";
@@ -69,7 +69,7 @@ vnEngine.startScene('start');
 
 Crear Personajes Personalizados
 Define tus personajes extendiendo CharacterModel.
-```
+```javascript
 import { CharacterModel } from "../Core/VisualNovelModules.js";
 
 export class DanaModel extends CharacterModel {
@@ -87,7 +87,7 @@ export const Dana = new DanaModel();
 
 Uso en escenas
 
-```
+```javascript
 vnEngine.defineScene('Dana_Home_0', [
   Scene.Show("home/home_day", "house_ambience"),
   Dana.Show("Happy"), // Muestra a Dana con estado feliz
@@ -112,7 +112,7 @@ Este método permite mostrar un fondo con opciones posicionadas.
 
 Ejemplo de uso:
 
-```
+```javascript
 import { RoomScene } from "../Core/VisualNovelModules.js";
 import { Dana } from "../Characters/Dana.js";
 import { HomeMenu } from "../Menus/HomeMenu.js";
@@ -140,7 +140,7 @@ Posicionar Botones en Pantalla
 
 Puedes usar xpos e ypos para posicionar botones manualmente:
 
-```
+```javascript
 Flow.Action("Ir al sótano", [Flow.Jump("Basement")], {
   icon: "icon_basement",
   position: { xpos: 70, ypos: 85 } // 70% ancho, 85% alto
@@ -150,7 +150,7 @@ Flow.Action("Ir al sótano", [Flow.Jump("Basement")], {
 Guardado Local
 Guarda y restaura partidas fácilmente:
 
-```
+```javascript
 saveSystem.saveToSlot("slot1"); // Guardar estado actual
 saveSystem.loadFromSlot("slot1"); // Cargar partida
 
@@ -161,7 +161,7 @@ saveSystem.showSaveLoadScreen(true);  // true = cargar
 Sistema de Tiempo
 Avanza el tiempo y muestra escenas según la hora del día:
 
-```
+```javascript
 // Avanzar 3 horas
 vnEngine.TimeSystem.advanceTime(3);
 
@@ -178,13 +178,14 @@ if (time.hour >= 20 || time.hour < 5) {
 
 También puedes definir escenas que cambien automáticamente según la hora:
 
-```
+```javascript
 Scene.Show("plaza", null, true, true); // isAffectedByTime = true
 ```
 
  Extensiones Soportadas
 El motor prueba automáticamente varias extensiones:
-```
+
+
 Imagen
 .webp, .png,.jpg,.gif
 
@@ -192,34 +193,39 @@ Video
 .mp4,.webm,.ogg
 
 Audio
-.mp3```
+.mp3
 
 Comandos Principales
 
-```Scene.Show(image, audio, loopAudio, isAffectedByTime) - Fondo + música ambiental
-Dialogue.Say(name, text, audio) - Diálogo con voz
-Flow.Choice(options) - Menú interactivo
-Flow.Jump(target) - Salto entre escenas
-Flow.If(condition, thenBlock, elseBlock) - Condicionales lógicos
-Flow.Set(variable, value) - Asignar variables globales
-Character.Show(state, position) - Mostrar personaje
-Character.Hide() - Ocultar personaje```
+```javascript
+  Scene.Show(image, audio, loopAudio, isAffectedByTime) // Fondo + música ambiental
+  Dialogue.Say(name, text, audio) // Diálogo con voz
+  Flow.Choice(options) // Menú interactivo
+  Flow.Jump(target) // Salto entre escenas
+  Flow.If(condition, thenBlock, elseBlock) // Condicionales lógicos
+  Flow.Set(variable, value) // Asignar variables globales
+  Character.Show(state, position) // Mostrar personaje
+  Character.Hide() // Ocultar personaje
+```
 
 
 Para Desarrolladores
 Extender el motor
 Puedes añadir nuevas funcionalidades creando clases personalizadas:
 
-```class CustomScene {
+```javascript
+class CustomScene {
   static Go(...) {
     // Tu lógica personalizada
   }
-}```
+}
+```
 
 Agregar condiciones complejas
 Usa Flow.And, Flow.Or, Flow.Not para condiciones lógicas avanzadas:
 
-```Flow.If(
+```javascript
+Flow.If(
   Flow.And(
     Flow.Var("danaFriendshipLevel", ">=", 2),
     Flow.Time("<", 12)
@@ -228,22 +234,28 @@ Usa Flow.And, Flow.Or, Flow.Not para condiciones lógicas avanzadas:
     Scene.Show("plaza_morning"),
     Dialogue.Say("Tú", "Es temprano...")
   ]
-)```
+)
+```
 
 Características Principales
 
-```Scene.Show(...)  - Carga fondos con transición
+```javascript
+
+
+Scene.Show(...)  - Carga fondos con transición
 Character.Show(...)  - Personajes con estados visuales
 Flow.Choice(...)  - Menús interactivos
 Flow.Jump(...)  - Saltar entre escenas
 Flow.If(...)  - Condiciones lógicas
 TimeSystem - Cambios automáticos según hora
 SaveSystem - Guardar/restaurar partida
-RoomScene.Go(...)  - Mapas con opciones posicionadas```
+RoomScene.Go(...)  - Mapas con opciones posicionadas
+```
 
 Ejemplo Completo de una Escena Dinámica
 
-```vnEngine.defineScene('Kitchen_Dana_01', [
+```javascript
+vnEngine.defineScene('Kitchen_Dana_01', [
   Scene.Show("home/kitchen_day", "kitchen_ambience"),
   Dialogue.Say("Narrador", "El aroma del caldo recién hecho llena la cocina..."),
   Dana.Show("Cooking"),
@@ -259,7 +271,8 @@ Ejemplo Completo de una Escena Dinámica
     ])
   ]),
   Flow.Jump("Home")
-]);```
+]);
+```
 
 ## 📜 Licencia
 
