@@ -1,17 +1,11 @@
 //@ts-check
 
-import { CharacterModel } from "../../WOpenWorldJs/Core/Common/CharacterModel.js";
+import { CharacterModel } from "../../Core/Common/CharacterModel.js";
+import { BlockObject, GameMap } from "../../Core/OppenWorld/OpenWordModules/Models.js";
+import { OpenWorldEngineView } from "../../Core/OppenWorld/OpenWorldEngineView.js";
+import { vnEngine } from "../../Core/VisualNovel/VisualNovelEngine.js";
+import { Dialogue, Flow, Scene } from "../../Core/VisualNovel/VisualNovelModules.js";
 import { DanaCharacter } from "../Characters/DanaCharacter.js";
-
-import { BlockObject, GameMap } from "../../WOpenWorldJs/Core/OppenWorld/OpenWordModules/Models.js";
-import { OpenWorldEngineView } from "../../WOpenWorldJs/Core/OppenWorld/OpenWorldEngineView.js";
-
-import { vnEngine } from "../../WOpenWorldJs/Core/VisualNovel/VisualNovelEngine.js";
-import { Character, Dialogue, Flow, Scene } from "../../WOpenWorldJs/Core/VisualNovel/VisualNovelModules.js";
-
-
-
-
 
 const getAsset = (/** @type {string} */ asset) => "./Media/assets/Maps/" + asset;
 
