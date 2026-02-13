@@ -15,6 +15,7 @@ Navegador moderno (Chrome, Firefox, Edge)
 Soporte para módulos ES6 (type="module")
 Carpetas multimedia organizadas (Media/, Characters/, History/, etc.)
 Iniciar el Proyecto
+
 1. Clonar el repositorio
 
 # git clone https://github.com/tu-usuario/nombre-del-repositorio.git 

@@ -29,7 +29,7 @@ const npc1 = new CharacterModel({
 vnEngine.defineScene("npc1Chat", [
     Scene.Show("Scene/Mage_Scene.png"),
     DanaCharacter.Say("..."),
-    npc1.ShowR(),
+    npc1.Show(),
     Flow.Choice([
         Flow.Action("Saludar", [
             DanaCharacter.Say("Hola"),

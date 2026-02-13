@@ -11,11 +11,13 @@ export class CharacterModel {
      * @param {Partial<CharacterModel>} [props]
      */
     constructor(props) {
-
+        /**
+         * @type {any[]}
+         */
         this.MapData = []
         Object.assign(this, props);
         // @ts-ignore
-        this.Name =  this.Name ?? this.__proto__.constructor.name.replace("Model", "");
+        this.Name = this.Name ?? this.__proto__.constructor.name.replace("Model", "");
         //esta propiedad refleja la ruta imagen que debe usar segun cada estado
         /**@type {Object.<string, any>} */
         this.Sprites = {
@@ -55,27 +57,27 @@ export class CharacterModel {
 
         // Historia del personaje
         this.Backstory = `Este es ${name}, un ${this.isFemale ? 'valiente heroína' : 'valiente héroe'} con una historia fascinante. Ha recorrido muchos lugares y enfrentado numerosos desafíos para llegar hasta donde está ahora.`;
-
         // Estado actual
         this.currentState = "Normal";
-
         // Nivel y experiencia
         this.Level = Math.floor(Math.random() * 50) + 1;
         this.Experience = Math.floor(Math.random() * 1000);
-
         // Inventario simulado
         this.Inventory = [
             { name: "Espada", type: "Arma", rarity: "Común" },
             { name: "Poción de Vida", type: "Consumible", rarity: "Común" },
             { name: "Amuleto Mágico", type: "Accesorio", rarity: "Raro" }
         ];
-        this.tileHeight = undefined;        
+        /**
+         * @type {number | undefined}
+         */
+        this.tileHeight = undefined;
         this.isNPC = false;
-        this.Action = ()=> {} //TODO action de mapa;
+        this.Action = () => { } //TODO action de mapa;
+        this.width = 1;
+        this.height = 1.5;
         Object.assign(this, props);
-        vnEngine.RegisterCharacter(this);
-        
-        
+        vnEngine.RegisterCharacter(this);        
     }
 
     RegisterWordMapCharacter = async () => {
@@ -153,7 +155,7 @@ export class CharacterModel {
      * @param {any|undefined} audio
      */
     Say(text, audio = undefined) {
-        const translated = translate.find(x => x.old == text)?.new;
+        const translated = translate.find((/** @type {{ old: any; }} */ x) => x.old == text)?.new;
         return Dialogue.Say(this.Name, text, audio, this.isFemale);
     }
     /**
@@ -207,18 +209,10 @@ export class CharacterModel {
     }
 
     //acciones de openworl
-
+    static SpriteCache = new Map();
     /**
      * @param {string} src
-     
-    _loadSprite(src) {
-        const img = new Image();
-        img.src = src;
-        return img;
-    }*/
-
-    static SpriteCache = new Map();
-
+    */
     _loadSprite(src) {
         if (CharacterModel.SpriteCache.has(src)) {
             return CharacterModel.SpriteCache.get(src);
@@ -227,7 +221,7 @@ export class CharacterModel {
         img.src = src;
         CharacterModel.SpriteCache.set(src, img);
         return img;
-    }   
+    }
     animFPS = {
         idle: 2,
         walk: 24,
@@ -246,6 +240,7 @@ export class CharacterModel {
             this.animTimer = 0;
         }
 
+        // @ts-ignore
         const fps = this.animFPS[this.state] ?? 6;
         const frameTime = 1 / fps;
 
@@ -258,6 +253,10 @@ export class CharacterModel {
     }
 
 
+    /**
+     * @param {{ drawImage: (arg0: any, arg1: number, arg2: number, arg3: number, arg4: number) => void; }} ctx
+     * @param {{ x: number; zoom: number; screenW: number; y: number; screenH: number; }} cam
+     */
     draw(ctx, cam) {
         const spriteList = this.Sprites[this.state][this.direction];
         const img = spriteList[this.animFrame];
@@ -304,13 +303,22 @@ export class CharacterModel {
 
     //------------
 
+    /**
+     * @param {any} arg0
+     * @param {any} arg1
+     */
     setLocation(arg0, arg1) {
         return "TODO";
     }
+    /**
+     * @param {any} arg0
+     */
     SetNeedItem(arg0) {
         return "TODO";
     }
-
+    /**
+     * @param {any} arg0
+     */
     GetNeedItem(arg0) {
         return "TODO";
     }
