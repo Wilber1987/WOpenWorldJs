@@ -60,7 +60,7 @@ const ciudad1 = new GameMap('Ciudad1', 24, 24, {
 // Edificio 1
 ciudad1.addObject(new BlockObject(2, 2, 4, 4, {
     color: '#8B4513', // Marrón oscuro
-    autoTrigger: false,
+    autoTrigger: true,
     icon: getAsset("City1/EDIFICIO (2).png")
 }));
 
