@@ -149,8 +149,6 @@ export class CharacterContainer extends HTMLElement {
      * @param {number} timestamp
      */
     _animate = (timestamp) => {
-        console.log("_animate");
-
         if (!this.isPlaying) return;
 
         if (!this.lastTimestamp) this.lastTimestamp = timestamp;

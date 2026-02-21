@@ -189,12 +189,13 @@ class OpenWorldEngineView extends HTMLElement {
         #stage-wrap {
             display: flex;
             gap: 12px;
-            padding: 12px;
             overflow: hidden;
             background-color: #fff;
             height: 100%;
             box-sizing: border-box;
             width: 100%;
+            margin: 0;
+            padding: 0;
         }
 
         #game {
@@ -217,11 +218,14 @@ class OpenWorldEngineView extends HTMLElement {
             flex: 0 0 280px;
             display: flex;
             flex-direction: column;
-            gap: 12px
+            gap: 12px;
+            position: absolute;
+            right: 10px;
+            top: 10px;
         }
 
         .panel {
-            background: #111;
+            background: rgba(0, 0, 0, .3);
             padding: 10px;
             border-radius: 8px;
             color: #ddd
@@ -251,7 +255,7 @@ class OpenWorldEngineView extends HTMLElement {
         #minimap {
             width: 100%;
             height: 160px;
-            background: #000;
+            background: rgba(0, 0, 0, .3);
             border-radius: 6px
         }
 
@@ -286,8 +290,9 @@ class OpenWorldEngineView extends HTMLElement {
         }
 
         #battle-ui {
-            width: 80%;
-            max-width: 600px;
+            width: 100%;
+            max-width: 100%;
+            height: 100%;
             background: #222;
             border-radius: 8px;
             padding: 20px;

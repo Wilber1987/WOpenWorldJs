@@ -1,10 +1,17 @@
+//@ts-check
 // --------------------------------------------------
 // Sistema de Batalla
+
+import { CharacterModel } from "../../Common/CharacterModel.js";
+
 // --------------------------------------------------
 export class BattleSystem {
     constructor(engine) {
         this.engine = engine;
         this.isActive = false;
+        /**
+         * @type {CharacterModel[]}
+         */
         this.combatants = []; // Todos los participantes en la batalla
         this.turnOrder = [];
         this.currentTurnIndex = 0;
@@ -18,6 +25,10 @@ export class BattleSystem {
     }
 
     // Iniciar una batalla
+    /**
+     * @param {CharacterModel[]} party
+     * @param {CharacterModel[]} enemies
+     * */
     startBattle(party, enemies) {
         this.isActive = true;
         this.combatants = [...party, ...enemies];
@@ -25,11 +36,11 @@ export class BattleSystem {
 
         // Inicializar combatientes si no tienen estadísticas
         this.combatants.forEach(combatant => {
-            combatant.maxHp = combatant.maxHp || combatant.hp || 1;
-            combatant.hp = combatant.hp || combatant.maxHp;
-            combatant.strength = combatant.strength || 1;
-            combatant.speed = combatant.speed || 1;
-            combatant.skills = combatant.skills || [this.createBasicAttack()];
+            combatant.Stats.maxHp = combatant.Stats.maxHp || combatant.Stats.hp || 1;
+            combatant.Stats.hp = combatant.Stats.hp || combatant.Stats.maxHp;
+            combatant.Stats.strength = combatant.Stats.strength || 1;
+            combatant.Stats.speed = combatant.Stats.speed || 1;
+            combatant.Skills = combatant.Skills || [this.createBasicAttack()];
         });
 
         // Calcular orden de turnos basado en velocidad
@@ -49,7 +60,7 @@ export class BattleSystem {
     // Calcular orden de turnos basado en velocidad
     calculateTurnOrder() {
         // Ordenar por velocidad (mayor primero)
-        this.turnOrder = [...this.combatants].sort((a, b) => b.speed - a.speed);
+        this.turnOrder = [...this.combatants].sort((a, b) => b.Stats.speed - a.Stats.speed);
     }
 
     // Iniciar el siguiente turno
@@ -73,7 +84,7 @@ export class BattleSystem {
         const currentCombatant = this.turnOrder[this.currentTurnIndex];
 
         this.updateBattleUI();
-        this.logBattleMessage(`Turno de ${currentCombatant.name}`);
+        this.logBattleMessage(`Turno de ${currentCombatant.Name}`);
 
         // Si es un enemigo, ejecutar su turno automáticamente
         if (currentCombatant.isEnemy) {
@@ -87,7 +98,7 @@ export class BattleSystem {
     // Ejecutar turno de enemigo
     executeEnemyTurn(enemy) {
         // Seleccionar un objetivo aleatorio vivo del grupo aliado
-        const targets = this.combatants.filter(c => !c.isEnemy && c.hp > 0);
+        const targets = this.combatants.filter(c => !c.isEnemy && c.Stats.hp > 0);
 
         if (targets.length === 0) {
             // No hay objetivos vivos, terminar batalla
@@ -96,7 +107,7 @@ export class BattleSystem {
         }
 
         const target = targets[Math.floor(Math.random() * targets.length)];
-        const skill = enemy.skills[0]; // Usar la primera habilidad (ataque básico)
+        const skill = enemy.Skills[0]; // Usar la primera habilidad (ataque básico)
 
         this.useSkill(enemy, skill, target);
     }
@@ -105,13 +116,13 @@ export class BattleSystem {
     showSkills(combatant) {
         this.skillButtonsEl.innerHTML = '';
 
-        combatant.skills.forEach(skill => {
+        combatant.Skills.forEach(skill => {
             const button = document.createElement('button');
             button.className = 'skill-btn';
-            button.textContent = skill.name;
+            button.textContent = skill.Name;
             button.onclick = () => {
                 // Para simplificar, seleccionar el primer enemigo vivo como objetivo
-                const targets = this.combatants.filter(c => c.isEnemy && c.hp > 0);
+                const targets = this.combatants.filter(c => c.isEnemy && c.Stats.hp > 0);
                 if (this.targetEnemy && this.targetEnemy > 0) {
                     this.useSkill(combatant, skill, this.targetEnemy);
                 }
@@ -130,14 +141,14 @@ export class BattleSystem {
     useSkill(user, skill, target) {
         // Calcular daño
         const damage = skill.calculateDamage(user, target);
-        target.hp = Math.max(0, target.hp - damage);
+        target.Stats.hp = Math.max(0, target.Stats.hp - damage);
 
         // Registrar mensaje
-        this.logBattleMessage(`${user.name} usa ${skill.name} contra ${target.name} y causa ${damage} de daño.`);
+        this.logBattleMessage(`${user.Name} usa ${skill.name} contra ${target.Name} y causa ${damage} de daño.`);
 
         // Verificar si el objetivo murió
-        if (target.hp <= 0) {
-            this.logBattleMessage(`¡${target.name} ha sido derrotado!`);
+        if (target.Stats.hp <= 0) {
+            this.logBattleMessage(`¡${target.Name} ha sido derrotado!`);
         }
 
         // Actualizar UI
@@ -156,7 +167,7 @@ export class BattleSystem {
         this.enemyCombatantsEl.innerHTML = '';
 
         const currentCombatant = this.turnOrder[this.currentTurnIndex];
-        this.turnIndicator.textContent = `Turno: ${currentCombatant.name}`;
+        this.turnIndicator.textContent = `Turno: ${currentCombatant.Name}`;
 
         // Mostrar combatientes del grupo aliado
         this.combatants
@@ -200,12 +211,12 @@ export class BattleSystem {
             el.classList.add('active');
         }
 
-        const hpPercent = (combatant.hp / combatant.maxHp) * 100;
+        const hpPercent = (combatant.Stats.hp / combatant.Stats.maxHp) * 100;
 
         el.innerHTML = `
                     <div>
-                        <div>${combatant.name}</div>
-                        <div class="small">HP: ${combatant.hp}/${combatant.maxHp}</div>
+                        <div>${combatant.Name}</div>
+                        <div class="small">HP: ${combatant.Stats.hp}/${combatant.Stats.maxHp}</div>
                     </div>
                     <div class="hp-bar">
                         <div class="hp-fill ${hpPercent < 30 ? 'low' : ''}" style="width: ${hpPercent}%"></div>
@@ -223,8 +234,8 @@ export class BattleSystem {
 
     // Terminar la batalla
     endBattle() {
-        const aliveParty = this.combatants.filter(c => !c.isEnemy && c.hp > 0);
-        const aliveEnemies = this.combatants.filter(c => c.isEnemy && c.hp > 0);
+        const aliveParty = this.combatants.filter(c => !c.isEnemy && c.Stats.hp > 0);
+        const aliveEnemies = this.combatants.filter(c => c.isEnemy && c.Stats.hp > 0);
 
         if (aliveParty.length > 0 && aliveEnemies.length === 0) {
             this.logBattleMessage("¡Victoria! Todos los enemigos han sido derrotados.");
@@ -246,7 +257,7 @@ export class BattleSystem {
         return {
             name: "Ataque Básico",
             calculateDamage: (user, target) => {
-                return Math.max(1, user.strength);
+                return Math.max(1, user.Stats.strength);
             }
         };
     }

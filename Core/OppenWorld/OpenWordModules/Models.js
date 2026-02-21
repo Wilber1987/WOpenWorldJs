@@ -22,9 +22,11 @@ export class BlockObject {
         this.color = opts.color;
         this.Action = opts.Action || null; // function(engine)
         this.ActionQuestion = opts.ActionQuestion || null; // function(engine) -> bool|Promise
-        this.autoTrigger = opts.autoTrigger ?? true; // if true, action runs when player steps on it (onEnter)
+        this.autoTrigger = opts.autoTrigger ?? false; // if true, action runs when player steps on it (onEnter)
         this._lastTriggered = 0;
-        this.icon = opts.icon
+        this.icon = opts.icon;
+        this.iconWidth = undefined;
+        this.iconHeight = undefined;
     }
     /**
      * @param {number} tx
@@ -45,7 +47,7 @@ export class GameMap {
         this.name = name;
         this.w = w; this.h = h;
         /**
-         * @type {any[]}
+         * @type {BlockObject[]}
          */
         this.objects = [];
         this.bgColor = opts.bgColor || '#4aa3ff';

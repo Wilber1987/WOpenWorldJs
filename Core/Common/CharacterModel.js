@@ -33,9 +33,9 @@ export class CharacterModel {
 
         /**@type {Object.<string, any>} */
         this.SpritesFrames = {
-            idle: props?.SpritesFrames?.idle ?? 101,
-            walk: props?.SpritesFrames?.walk ?? 53,
-            attack: props?.SpritesFrames?.attack ?? 53,
+            idle: props?.SpritesFrames?.idle ?? 66,
+            walk: props?.SpritesFrames?.walk ?? 22,
+            attack: props?.SpritesFrames?.attack ?? 22,
         }
         //estado del personaje
         /**@type {Number} */
@@ -58,6 +58,8 @@ export class CharacterModel {
             strength: 5,
             speed: 5 // Para batalla
         }
+
+        this.Skills = []
         /**@type {Number} */
         this.animFrame = props?.animFrame ?? 0;
         /**@type {Number} */
@@ -96,7 +98,7 @@ export class CharacterModel {
         /**@type {Function} */
         this.Action = props?.Action ?? (() => { }) //TODO action de mapa;
         /**@type {Number} */
-        this.width = props?.width ?? 2;
+        this.width = props?.width ?? 1;
         /**@type {Number} */
         this.height = props?.height ?? 3;
         //Object.assign(this, props);
@@ -164,7 +166,7 @@ export class CharacterModel {
      * @param {number} startIndex Índice inicial (default = 1)
      * @returns {HTMLImageElement[]}
      */
-    _loadSpriteSequence(basePath, frameCount, ext = 'png', startIndex = 1) {
+    _loadSpriteSequence(basePath, frameCount, ext = 'png', startIndex = 0) {
         const frames = [];
         for (let i = 0; i < frameCount; i++) {
             const img = new Image();
@@ -246,9 +248,9 @@ export class CharacterModel {
         return img;
     }
     animFPS = {
-        idle: 60,
-        walk: 60,
-        attack: 60
+        idle: 25,
+        walk: 25,
+        attack: 25
     };
     /**
      * @param {number} dt

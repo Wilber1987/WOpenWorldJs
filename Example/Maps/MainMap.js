@@ -13,14 +13,14 @@ const getAsset = (/** @type {string} */ asset) => "./Media/assets/Maps/" + asset
 const npc1 = new CharacterModel({
     Name: "Mage",
     Sprites: {
-        Normal: Array.from({ length: 80 }, (_, i) => `Scene/sprites/Mage/Normal/${i}.png`)
+        Normal: Array.from({ length: 33 }, (_, i) => `Scene/sprites/Mage/Normal/${i}.png`)
     },
     SpritesFrames: {
-        idle: 80
+        idle: 33
     },
     MapData: [
         {
-            name: "Ciudad1", posX: 15, posY: 20, action: () => {
+            name: "Ciudad1", posX: 24, posY: 14, action: () => {
                 vnEngine.startScene("npc1Chat");
             }
         }
@@ -36,6 +36,11 @@ vnEngine.defineScene("npc1Chat", [
             DanaCharacter.Say("Hola"),
             Dialogue.Say("Mage", "Hola"),
             () => vnEngine.Disconnect()
+        ]),
+        Flow.Action("Entrenar", [
+            DanaCharacter.Say("Hola entrenemos"),
+            () => battle(),
+            () => vnEngine.Disconnect()
         ])
     ])
 ]);
@@ -48,8 +53,8 @@ const oppenWorld = new OpenWorldEngineView({
 const ciudad1 = new GameMap('Ciudad1', 64, 36, {
     //const ciudad1 = new GameMap('Ciudad1', 46, 27, {
     //const ciudad1 = new GameMap('Ciudad1', 46, 27, {
-    spawnX: 24,   // Punto de inicio del jugador
-    spawnY: 18,
+    spawnX: 23,   // Punto de inicio del jugador
+    spawnY: 16,
     bgColor: '#666', // Calle gris
     NPCs: [npc1], // <-- Aquí se pasan los NPCs desde la creación
     backgroundImage: getAsset("City1/map1.png")
@@ -63,14 +68,14 @@ const ciudad1 = new GameMap('Ciudad1', 64, 36, {
 //     icon: getAsset("City1/EDIFICIO (2).png")
 // }));
 
-// // Puerta del edificio 1 (amarilla)
-// ciudad1.addObject(new BlockObject(7, 9, 1, 1, {
-//     color: '#FFD700', // Amarillo
-//     autoTrigger: true,
-//     Action: () => {
-//         alert("Puerta del edificio 1. Próximamente: interior.");
-//     }
-// }));
+// Puerta del edificio 1 (amarilla)
+ciudad1.addObject(new BlockObject(24, 12, 1, 1, {
+    color: '#FFD700', // Amarillo
+    //autoTrigger: true,
+    Action: () => {
+        console.log("Prueba de proximidad auto disparada");
+    }
+}));
 
 //#region BLOQUES DE COLICIONES INVISIBLES
 // --- Objetos/Bloques para ciudad1 ---
@@ -988,6 +993,46 @@ oppenWorld.AddMap(ciudad1);
 
 // --- Ir al mapa ---
 //oppenWorld.GoToMap("Ciudad1");
+
+//#region SIMULADOR DE BATALLA
+const battle = () => {
+    // Crear grupo de prueba
+    const party = [
+        DanaCharacter,
+        npc1
+    ];
+
+    // Crear enemigos de prueba
+    const enemies = [
+        {
+            Name: "Goblin",
+            Stats: {
+                hp: 15,
+                maxHp: 15,
+                strength: 3,
+                speed: 3,
+            },
+            isEnemy: true,
+            Skills: [oppenWorld.GameEngine.battleSystem.createBasicAttack()]
+        },
+        {
+            Name: "Orco",
+            Stats: {
+                hp: 20,
+                maxHp: 20,
+                strength: 4,
+                speed: 2,
+            },
+            isEnemy: true,
+            Skills: [oppenWorld.GameEngine.battleSystem.createBasicAttack()]
+        }
+    ];
+
+    // Iniciar batalla
+    oppenWorld.GameEngine.battleSystem.startBattle(party, enemies);
+
+}
+//#endregion
 
 // --- Crear NPC's ---
 export const goToCity1 = () => {

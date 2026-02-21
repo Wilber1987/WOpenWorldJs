@@ -528,7 +528,7 @@ export class VisualNovelEngine {
         // Crear elemento con soporte para animación
         // @ts-ignore
         let element = new CharacterContainer(character, imageSource, position, {
-            fps: options.fps ?? imageSource.length,
+            fps: options.fps ?? 25,
             loop: options.loop ?? true,
             state: options.state ?? 'idle'
         });
@@ -1208,7 +1208,6 @@ export class VisualNovelEngine {
      * @param {CharacterModel} character - El modelo del personaje a registrar.
      */
     RegisterCharacter(character) {
-        console.log(character);
         if (!this.Characters.find(char => char.Name == character.Name)) {
             this.Characters.push(character)
         }
