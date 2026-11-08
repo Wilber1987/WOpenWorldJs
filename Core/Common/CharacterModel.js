@@ -765,4 +765,3 @@ export class CharacterModel {
         (this._watchers?.[prop]).forEach((/** @type {(arg0: any, arg1: any, arg2: this) => any} */ cb) => cb(newVal, oldVal, this));
     }
 }
-

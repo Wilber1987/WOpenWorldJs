@@ -288,6 +288,89 @@ export class VisualNovelView extends HTMLElement {
 
         .background-image {
           transition: all 0.7s;
+          will-change: transform, opacity, clip-path;
+          backface-visibility: hidden;
+        }
+
+        /* ============================================================
+         * Transiciones de escena (equivalente a 'with X' de Ren'Py)
+         * UIManager.applySceneEffect aplica la animación al contenedor
+         * del nuevo fondo usando el nombre extraído por Scene.ParseUrl.
+         * ============================================================ */
+
+        @keyframes vn-fade-in {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+
+        @keyframes vn-fade-black {
+          0%   { opacity: 1; filter: brightness(0); }
+          35%  { opacity: 1; filter: brightness(0); }
+          100% { opacity: 1; filter: brightness(1); }
+        }
+
+        @keyframes vn-vpunch {
+          0%, 100% { transform: translateY(0); }
+          15%      { transform: translateY(-14px); }
+          30%      { transform: translateY(10px); }
+          45%      { transform: translateY(-7px); }
+          60%      { transform: translateY(5px); }
+          80%      { transform: translateY(-2px); }
+        }
+
+        @keyframes vn-hpunch {
+          0%, 100% { transform: translateX(0); }
+          15%      { transform: translateX(-14px); }
+          30%      { transform: translateX(10px); }
+          45%      { transform: translateX(-7px); }
+          60%      { transform: translateX(5px); }
+          80%      { transform: translateX(-2px); }
+        }
+
+        @keyframes vn-push-down {
+          from { transform: translateY(-100%); }
+          to   { transform: translateY(0); }
+        }
+
+        @keyframes vn-push-up {
+          from { transform: translateY(100%); }
+          to   { transform: translateY(0); }
+        }
+
+        @keyframes vn-push-left {
+          from { transform: translateX(100%); }
+          to   { transform: translateX(0); }
+        }
+
+        @keyframes vn-push-right {
+          from { transform: translateX(-100%); }
+          to   { transform: translateX(0); }
+        }
+
+        @keyframes vn-squares {
+          0%   { opacity: 0; transform: scale(0.65); }
+          60%  { opacity: 1; transform: scale(1.04); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes vn-wipe-right {
+          from { clip-path: inset(0 100% 0 0); }
+          to   { clip-path: inset(0 0 0 0); }
+        }
+
+        @keyframes vn-wipe-left {
+          from { clip-path: inset(0 0 0 100%); }
+          to   { clip-path: inset(0 0 0 0); }
+        }
+
+        @keyframes vn-iris-in {
+          from { clip-path: circle(0% at 50% 50%); }
+          to   { clip-path: circle(150% at 50% 50%); }
+        }
+
+        @keyframes vn-iris-out {
+          from { clip-path: circle(150% at 50% 50%); }
+          to   { clip-path: circle(0% at 50% 50%); }
         }
 
 
@@ -492,6 +575,10 @@ export class VisualNovelView extends HTMLElement {
           top: 30%;
           right: 150px;
           position: absolute;
+          /* Permite listas largas (mapa de migración) sin desbordar la pantalla */
+          max-height: 60%;
+          overflow-y: auto;
+          padding-right: 8px;
         }
 
         .text-box {

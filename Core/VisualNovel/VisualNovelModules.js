@@ -4,16 +4,93 @@ const translate = JSON.parse(localStorage.getItem("translate") ?? "[]");
 const domainUrl = "./Media";
 export class Scene {
     /**
+     * Extrae del string de una escena las cláusulas de Ren'Py que NO forman
+     * parte de la ruta de la imagen:
+     *
+     *   `scene foo with Dissolve(0.3)`  -> effect: { name: "Dissolve", duration: 0.3 }
+     *   `scene foo with pushdown`       -> effect: { name: "pushdown", duration: undefined }
+     *   `scene foo at force_zoom(2)`    -> transform: { name: "force_zoom", args: ["2"] }
+     *
+     * Devuelve siempre `{ cleanUrl, sceneEffect, sceneTransform }`.
+     *
+     * @param {string} url
+     * @returns {{ cleanUrl: string, sceneEffect: { name: string, duration?: number, args: string[] } | null, sceneTransform: { name: string, args: string[], raw: string } | null }}
+     */
+    static ParseUrl(url) {
+        if (typeof url !== "string") {
+            return { cleanUrl: url, sceneEffect: null, sceneTransform: null };
+        }
+
+        let cleanUrl = url;
+        /** @type {{ name: string, duration?: number, args: string[] } | null} */
+        let sceneEffect = null;
+        /** @type {{ name: string, args: string[], raw: string } | null} */
+        let sceneTransform = null;
+
+        // `with <Nombre>(<args>)` — normalmente al final del string.
+        // Acepta un `:` residual que deja el decompilador (ej. "black with fade:").
+        const withRe = /\s+with\s+([A-Za-z_][A-Za-z0-9_]*)(?:\s*\(([^)]*)\))?\s*:?\s*$/;
+        // `at <transform>(<args>)` — puede aparecer antes o después de `with`.
+        const atRe = /\s+at\s+([A-Za-z_][A-Za-z0-9_]*)(?:\s*\(([^)]*)\))?\s*$/;
+
+        // Extraer en bucle para soportar `at ... with ...` y `with ... at ...`,
+        // y por si el decompilador dejó más de una cláusula.
+        let changed = true;
+        while (changed) {
+            changed = false;
+
+            const withMatch = cleanUrl.match(withRe);
+            if (withMatch) {
+                if (!sceneEffect) {
+                    const args = withMatch[2]
+                        ? withMatch[2].split(",").map((s) => s.trim()).filter(Boolean)
+                        : [];
+                    const numeric = args.length > 0 ? Number(args[0]) : NaN;
+                    sceneEffect = {
+                        name: withMatch[1],
+                        duration: Number.isFinite(numeric) ? numeric : undefined,
+                        args
+                    };
+                }
+                cleanUrl = cleanUrl.slice(0, withMatch.index).trim();
+                changed = true;
+                continue;
+            }
+
+            const atMatch = cleanUrl.match(atRe);
+            if (atMatch) {
+                if (!sceneTransform) {
+                    const args = atMatch[2]
+                        ? atMatch[2].split(",").map((s) => s.trim()).filter(Boolean)
+                        : [];
+                    sceneTransform = {
+                        name: atMatch[1],
+                        args,
+                        raw: atMatch[0].trim()
+                    };
+                }
+                cleanUrl = cleanUrl.slice(0, atMatch.index).trim();
+                changed = true;
+            }
+        }
+
+        return { cleanUrl, sceneEffect, sceneTransform };
+    }
+
+    /**
      * @param {string} url
      * @param {string|undefined} [audio]
      */
     static Show(url, audio, loopAudio = true, isAffectedByTime = false) {
+        const { cleanUrl, sceneEffect, sceneTransform } = Scene.ParseUrl(url);
         return {
             type: "scene",
-            image: `${domainUrl}/${url}`,
+            image: `${domainUrl}/${cleanUrl}`,
             audio: audio ? `${domainUrl}/${audio}` : null,
             isAffectedByTime: isAffectedByTime,
-            loopAudio
+            loopAudio,
+            sceneEffect,
+            sceneTransform
         };
     }
     /**
@@ -32,6 +109,9 @@ export class Scene {
 }
 
 export class Character {
+    static GetKey() {
+        //throw new Error("Method not implemented.");
+    }
     /**
      * @param {any} who
      * @param {any} image

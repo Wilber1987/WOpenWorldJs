@@ -414,6 +414,105 @@ export class UIManager {
     }
 
     /**
+     * Aplica la animación CSS equivalente a una transición `with X` de Ren'Py.
+     * El nombre y la duración vienen ya extraídos por `Scene.ParseUrl`.
+     *
+     * @param {HTMLElement} element
+     * @param {{ name: string, duration?: number, args?: string[] } | null | undefined} effect
+     */
+    applySceneEffect(element, effect) {
+        if (!element || !effect || !effect.name) return;
+
+        const name = String(effect.name).toLowerCase();
+        const duration = Number.isFinite(effect.duration) ? effect.duration : undefined;
+
+        /** @type {string | null} */
+        let animation = null;
+        switch (name) {
+            case "dissolve":
+                animation = `vn-fade-in ${duration ?? 0.5}s ease-out both`;
+                break;
+            case "fade":
+                animation = `vn-fade-black ${duration ?? 0.5}s ease-out both`;
+                break;
+            case "vpunch":
+                animation = "vn-vpunch 0.4s ease-out";
+                break;
+            case "hpunch":
+                animation = "vn-hpunch 0.4s ease-out";
+                break;
+            case "pushdown":
+                animation = `vn-push-down ${duration ?? 0.45}s ease-out both`;
+                break;
+            case "pushup":
+                animation = `vn-push-up ${duration ?? 0.45}s ease-out both`;
+                break;
+            case "pushleft":
+                animation = `vn-push-left ${duration ?? 0.45}s ease-out both`;
+                break;
+            case "pushright":
+                animation = `vn-push-right ${duration ?? 0.45}s ease-out both`;
+                break;
+            case "squares":
+                animation = `vn-squares ${duration ?? 0.5}s ease-out both`;
+                break;
+            case "wiperight":
+                animation = `vn-wipe-right ${duration ?? 0.5}s ease-out both`;
+                break;
+            case "wipeleft":
+                animation = `vn-wipe-left ${duration ?? 0.5}s ease-out both`;
+                break;
+            case "irisin":
+                animation = `vn-iris-in ${duration ?? 0.5}s ease-out both`;
+                break;
+            case "irisout":
+                animation = `vn-iris-out ${duration ?? 0.5}s ease-out both`;
+                break;
+            case "pause":
+                // `with Pause(x)` no es una transición visual: solo espera.
+                return;
+            default:
+                // Transición desconocida: fade suave como fallback.
+                animation = `vn-fade-in ${duration ?? 0.3}s ease-out both`;
+                break;
+        }
+
+        if (animation) {
+            element.style.animation = animation;
+        }
+    }
+
+    /**
+     * Aplica transformaciones simples (`at force_zoom(...)`, `at force_align(...)`)
+     * al fondo. Las transformaciones complejas se dejan como no-op.
+     *
+     * @param {HTMLElement} element
+     * @param {{ name: string, args?: string[] } | null | undefined} transform
+     */
+    applySceneTransform(element, transform) {
+        if (!element || !transform || !transform.name) return;
+
+        const name = String(transform.name).toLowerCase();
+        const args = (transform.args ?? []).map((v) => Number(v));
+
+        switch (name) {
+            case "force_align": {
+                const [x = 0.5, y = 0.5] = args;
+                element.style.backgroundPosition = `${x * 100}% ${y * 100}%`;
+                break;
+            }
+            case "force_zoom": {
+                const [scale = 1, x = 0.5, y = 0.5] = args;
+                element.style.backgroundSize = `${scale * 100}%`;
+                element.style.backgroundPosition = `${x * 100}% ${y * 100}%`;
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+    /**
      * Cambia el fondo (COMPATIBLE)
      * @param {import('../VisualNovelEngine.js').SceneCommand} command 
      * @returns {Promise<void>}
@@ -494,6 +593,8 @@ export class UIManager {
             newBgContainer.style.backgroundImage = `url('${validImage}')`;
             newBgContainer.style.backgroundSize = 'cover';
             newBgContainer.style.backgroundPosition = 'center';
+            // Transformaciones `at X(...)` de Ren'Py (zoom / alineación)
+            this.applySceneTransform(newBgContainer, command.sceneTransform);
         }
 
         background.appendChild(newBgContainer);
@@ -505,7 +606,15 @@ export class UIManager {
         currentBg?.classList.add('fade-out');
         setTimeout(() => currentBg?.remove(), 200);
 
-        newBgContainer.style.opacity = '1';
+        if (command.sceneEffect) {
+            // La animación controla opacidad/transform: evitamos el transition
+            // de 0.7s para que el efecto se vea tal cual.
+            newBgContainer.style.transition = 'none';
+            newBgContainer.style.opacity = '1';
+            this.applySceneEffect(newBgContainer, command.sceneEffect);
+        } else {
+            newBgContainer.style.opacity = '1';
+        }
         if (command.audio) {
             this.audioManager.stopAll()
             try {
