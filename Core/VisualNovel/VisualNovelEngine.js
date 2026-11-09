@@ -358,7 +358,7 @@ export class VisualNovelEngine {
 
 
     /**
-     * @param {boolean | Function | Condition} condition
+     * @param {Condition|Function|Boolean|FlowData} condition
      */
     evaluateCondition(condition) {
         const value =  this.conditionEvaluator.evaluate(condition)
@@ -487,6 +487,8 @@ export { vnEngine, saveSystem };
  * @property {boolean} [isAffectedByTime] - Indica si la imagen de fondo se ve afectada por la hora del día (para el tipo 'scene').
  * @property {string | null} [video] - Ruta al archivo de video de fondo (para el tipo 'scene').
  * @property {string} [operator] 
+ * @property {{ name: string, args?: string[] } | null | undefined} [sceneTransform] 
+ * @property {{ name: string, duration?: number, args?: string[] } | null | undefined} [sceneEffect] 
  */
 
 /**
