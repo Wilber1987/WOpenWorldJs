@@ -1418,11 +1418,11 @@ export class GameEngine {
      * @param {CharacterModel} character
      * @param {boolean} [isFullPerspective]
      */
-    RegisterCharacter(character, isFullPerspective = this.OpenWorldInstance.Config?.isFullPerspective) {
+    async RegisterCharacter(character, isFullPerspective = this.OpenWorldInstance.Config?.isFullPerspective) {
         if (this.Characters.some(chara => chara == character)) {
             return;
         }
-        character.RegisterWordMapCharacter(isFullPerspective)
+        await character.RegisterWordMapCharacter(isFullPerspective)
         this.Characters.push(character);
     }
 }

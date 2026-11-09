@@ -119,9 +119,21 @@ export class Character {
     static Show(who, image, position = "center") {
         return {
             type: "show", who,
-            image: typeof image === "string" ? `${domainUrl}/${image}` : image.map((/** @type {String} */ img) => `${domainUrl}/${img}`),
+            image: typeof image === "string" ? `${domainUrl}/${image}` : image.map((/** @type {String} */ img) => Character.getURI(img)),
             position
         };
+    }
+
+    /**
+     * @param {string|Image} img
+     */
+    static getURI(img) {
+        // @ts-ignore
+        if (img.__proto__ == Image.prototype) {
+            // @ts-ignore
+            return img.src;
+        }
+        return `${domainUrl}/${img}`;
     }
 
     /**

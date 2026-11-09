@@ -117,7 +117,7 @@ export class CharacterModel {
         // Historia del personaje
         /**@type {String} */
         this.Backstory = props?.Backstory ??
-            `Este es ${name}, un ${this.isFemale ? 'valiente heroína' : 'valiente héroe'} con una historia fascinante. Ha recorrido muchos lugares y enfrentado numerosos desafíos para llegar hasta donde está ahora.`;
+            `Este es ${name}, un ${this.isFemale ? 'valiente heroína' : 'valiente héroe'} ...`;
         // Estado actual
         /**@type {String} */
         this.currentState = props?.currentState ?? "Normal";
@@ -193,7 +193,7 @@ export class CharacterModel {
         this.isFullPerspective = isFullPerspective;
         this.isNPC = false;
         this.isBasicRegistered = false;
-        this.ChargeBasicSprites(isFullPerspective);
+        await this.ChargeBasicSprites(isFullPerspective);
         this.Sprites.walk = {
             down: await this.loadSpriteSequence(
                 `Media/assets/sprites/${this.SpritesDataAssets}/wd/`, this.SpritesFrames.walk

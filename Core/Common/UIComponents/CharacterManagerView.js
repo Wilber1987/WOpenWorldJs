@@ -89,12 +89,12 @@ export class CharacterManagerView extends HTMLElement {
     }
 
     async Update() {
-        
+
         if (this.Characters.length > 0) {
-            const leader = this.Characters.find(c => c.partyLeader) ?? this.Characters[0]    
+            const leader = this.Characters.find(c => c.partyLeader) ?? this.Characters[0]
             const sp = await leader.loadSpriteSequence(
                 `Media/assets/sprites/${leader.Name}/${leader.Outfits[0]}/mainSprite/`, leader.SpritesFrames.mainSprite
-            )       
+            )
             this.CharacterLeaderSprite.innerHTML = "";
             const characterContainer = new CharacterContainer(leader.Name, sp);
             this.CharacterLeaderSprite.append(characterContainer)
@@ -454,13 +454,12 @@ export class CharacterManagerView extends HTMLElement {
     /**
     * @param {Array<CharacterModel>} characters 
     */
-    registerCharacter(...characters) {
+    async registerCharacter(...characters) {
         this.Characters.push(...characters);
-        if (this.oppenWorld) {
-            this.Characters.forEach(char => this.oppenWorld?.RegisterCharacter(char))
-        }
-        if (this.vnEngine) {
-            this.Characters.forEach(char => this.vnEngine?.RegisterCharacter(char))
+        if (this.oppenWorld || this.vnEngine) {
+            for (const char of this.Characters) {
+                await this.oppenWorld?.RegisterCharacter(char)
+            }
         }
         this.update();
     }

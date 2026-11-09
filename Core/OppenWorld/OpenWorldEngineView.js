@@ -139,8 +139,8 @@ class OpenWorldEngineView extends HTMLElement {
     /**
     * @param {CharacterModel} character 
     */
-    RegisterCharacter(character) {
-        this.GameEngine.RegisterCharacter(character);
+    async RegisterCharacter(character) {
+        await this.GameEngine.RegisterCharacter(character);
     }
 
     update() {
