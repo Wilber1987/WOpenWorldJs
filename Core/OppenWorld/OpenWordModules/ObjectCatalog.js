@@ -32,10 +32,28 @@ const px = (n) => Math.round(n * T);
 
 /** Cara frontal + cara superior de una caja (vista 3/4) */
 function boxFaces(ctx, x, yBottom, w, frontH, topH, color) {
-    ctx.fillStyle = shade(color, -0.12); ctx.fillRect(x, yBottom - frontH, w, frontH);        // frente
-    ctx.fillStyle = shade(color, 0.12); ctx.fillRect(x, yBottom - frontH - topH, w, topH);    // tapa
-    ctx.fillStyle = shade(color, -0.28);                                                       // contorno inferior
-    ctx.fillRect(x, yBottom - 1, w, 1); ctx.fillRect(x, yBottom - frontH, w, 1);
+    const sideW = Math.max(4, Math.min(10, Math.round(w * 0.16)));
+    const front = ctx.createLinearGradient(x, 0, x + w, 0);
+    front.addColorStop(0, shade(color, 0.08)); front.addColorStop(0.68, shade(color, -0.08)); front.addColorStop(1, shade(color, -0.22));
+    ctx.fillStyle = front; ctx.fillRect(x, yBottom - frontH, w - sideW, frontH);
+    // Cara lateral derecha: separa planos y da profundidad 3/4.
+    ctx.fillStyle = shade(color, -0.28);
+    ctx.beginPath(); ctx.moveTo(x + w - sideW, yBottom - frontH);
+    ctx.lineTo(x + w, yBottom - frontH - Math.max(2, topH * 0.42));
+    ctx.lineTo(x + w, yBottom - Math.max(1, topH * 0.42));
+    ctx.lineTo(x + w - sideW, yBottom); ctx.closePath(); ctx.fill();
+    // Tapa en perspectiva, iluminada desde arriba-izquierda.
+    const top = ctx.createLinearGradient(x, yBottom - frontH - topH, x + w, yBottom - frontH);
+    top.addColorStop(0, shade(color, 0.24)); top.addColorStop(1, shade(color, 0.02));
+    ctx.fillStyle = top; ctx.beginPath();
+    ctx.moveTo(x, yBottom - frontH); ctx.lineTo(x + w - sideW, yBottom - frontH);
+    ctx.lineTo(x + w, yBottom - frontH - Math.max(2, topH * 0.42));
+    ctx.lineTo(x + sideW * 0.35, yBottom - frontH - topH); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = shade(color, -0.34); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, yBottom - frontH); ctx.lineTo(x + w - sideW, yBottom - frontH);
+    ctx.lineTo(x + w, yBottom - frontH - Math.max(2, topH * 0.42)); ctx.stroke();
+    ctx.fillStyle = shade(color, -0.34);
+    ctx.fillRect(x, yBottom - 1, w - sideW, 1);
 }
 
 /** @type {Object<string, ObjectDef>} */
@@ -184,23 +202,61 @@ export const OBJECT_DEFS = {
     },
     crate: {
         category: 'props', description: 'Caja de madera 1x1', fp: () => ({ w: 1, h: 1 }), vis: () => ({ w: 1, h: 1.4 }),
-        sprite: ({ ctx, W, H }) => {
-            const topH = px(0.4), frontH = H - topH;
-            boxFaces(ctx, 2, H, W - 4, frontH, topH, '#b07a45');
-            ctx.fillStyle = '#6b4a2b';
-            ctx.fillRect(2, H - frontH, 3, frontH); ctx.fillRect(W - 5, H - frontH, 3, frontH);
-            line(ctx, 5, H - frontH + 1, W - 6, H - 2, 2, '#8a5a2b'); line(ctx, W - 6, H - frontH + 1, 5, H - 2, 2, '#8a5a2b');
+        sprite: ({ ctx, W, H, rand }) => {
+            const topH = px(0.4), frontH = H - topH, x = 2, w = W - 4;
+            boxFaces(ctx, x, H, w, frontH, topH, '#b07a45');
+            // Tablones frontales con vetas y separaciones sutiles.
+            const frontW = w - Math.max(4, Math.min(10, Math.round(w * 0.16)));
+            for (let i = 1; i <= 3; i++) {
+                const yy = H - frontH + i * frontH / 4;
+                ctx.fillStyle = 'rgba(65,39,18,0.22)'; ctx.fillRect(x + 3, yy, frontW - 6, 1);
+                ctx.fillStyle = 'rgba(238,190,125,0.18)'; ctx.fillRect(x + 4, yy + 1, frontW - 8, 1);
+            }
+            ctx.strokeStyle = '#6b4a2b'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(x + 5, H - frontH + 2); ctx.lineTo(x + frontW - 3, H - 3);
+            ctx.moveTo(x + frontW - 3, H - frontH + 2); ctx.lineTo(x + 5, H - 3); ctx.stroke();
+            // Clavos y vetas cortas.
+            ctx.fillStyle = '#3f3024';
+            for (const [nx, ny] of [[x+7,H-frontH+7],[x+frontW-8,H-frontH+7],[x+7,H-8],[x+frontW-8,H-8]]) {
+                ctx.beginPath(); ctx.arc(nx, ny, 1.4, 0, Math.PI*2); ctx.fill();
+            }
+            for (let i=0;i<8;i++) { const yy=H-frontH+8+rand()*Math.max(1,frontH-16); ctx.fillStyle='rgba(255,210,155,0.16)'; ctx.fillRect(x+7+rand()*(frontW-14),yy,3+rand()*7,1); }
         },
         minimap: '#b07a45',
     },
     barrel: {
         category: 'props', description: 'Barril 1x1', fp: () => ({ w: 1, h: 1 }), vis: () => ({ w: 1, h: 1.5 }),
         sprite: ({ ctx, W, H }) => {
-            ctx.fillStyle = '#8a5a2b'; ctx.fillRect(5, 14, W - 10, H - 18);
-            ctx.fillStyle = '#6f4720'; ctx.fillRect(W - 12, 14, 7, H - 18);
-            ctx.fillStyle = '#a56f36'; ctx.fillRect(7, 14, 4, H - 18);
-            ctx.fillStyle = '#3d3d44'; ctx.fillRect(5, 22, W - 10, 3); ctx.fillRect(5, H - 14, W - 10, 3);
-            disc(ctx, W / 2, 14, 11, '#a56f36'); disc(ctx, W / 2, 14, 8, '#c38a4a'); disc(ctx, W / 2, 14, 2, '#8a5a2b');
+            const x = 5, y = 16, w = W - 10, h = H - 20, cx = W / 2;
+            // Cuerpo abombado con sombreado lateral y contorno elíptico.
+            const body = ctx.createLinearGradient(x, 0, x + w, 0);
+            body.addColorStop(0, '#b77a3d'); body.addColorStop(0.22, '#9a642f');
+            body.addColorStop(0.72, '#805022'); body.addColorStop(1, '#4f321b');
+            ctx.fillStyle = body; ctx.beginPath();
+            ctx.moveTo(x + 3, y + 5); ctx.quadraticCurveTo(x - 1, y + h*0.5, x + 4, y + h - 4);
+            ctx.quadraticCurveTo(cx, y + h + 5, x + w - 4, y + h - 4);
+            ctx.quadraticCurveTo(x + w + 1, y + h*0.5, x + w - 3, y + 5);
+            ctx.quadraticCurveTo(cx, y - 5, x + 3, y + 5); ctx.closePath(); ctx.fill();
+            // Duela central iluminada y juntas entre tablones.
+            ctx.strokeStyle = 'rgba(58,35,17,0.48)'; ctx.lineWidth = 1;
+            for (const dx of [-7, 0, 7]) { ctx.beginPath(); ctx.moveTo(cx+dx,y+5); ctx.quadraticCurveTo(cx+dx-2,y+h*0.5,cx+dx,y+h-4); ctx.stroke(); }
+            ctx.strokeStyle = 'rgba(238,185,112,0.42)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(x+5,y+8); ctx.quadraticCurveTo(x+2,y+h*0.5,x+6,y+h-7); ctx.stroke();
+            // Aros metálicos curvos que envuelven el volumen.
+            for (const yy of [y+10, y+h-11]) {
+                ctx.strokeStyle = '#34363b'; ctx.lineWidth = 4; ctx.beginPath();
+                ctx.ellipse(cx, yy, w*0.48, 5, 0, 0, Math.PI*2); ctx.stroke();
+                ctx.strokeStyle = '#85878b'; ctx.lineWidth = 1; ctx.beginPath();
+                ctx.ellipse(cx, yy-1, w*0.47, 4, 0, Math.PI*1.05, Math.PI*1.95); ctx.stroke();
+            }
+            // Tapa superior en perspectiva con duelas radiales.
+            const lid = ctx.createLinearGradient(cx-w*0.4,y,cx+w*0.35,y+14);
+            lid.addColorStop(0,'#d6a15e'); lid.addColorStop(1,'#805022');
+            ctx.fillStyle = lid; ctx.beginPath(); ctx.ellipse(cx, y+3, w*0.48, 8, 0, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#5b3a1d'; ctx.lineWidth = 1; ctx.beginPath();
+            ctx.ellipse(cx, y+3, w*0.35, 5, 0, 0, Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx,y-3); ctx.lineTo(cx,y+9); ctx.stroke();
+            ctx.fillStyle = 'rgba(255,235,190,0.38)'; ctx.fillRect(cx-w*0.28,y+1,5,1);
         },
         minimap: '#8a5a2b',
     },

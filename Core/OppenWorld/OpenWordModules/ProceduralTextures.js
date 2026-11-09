@@ -286,33 +286,59 @@ export const ProceduralSprites = {
             leaf = '#3f9a3a', bark = '#6b4a2b' } = o;
         const W = tilesW * TEX, H = tilesH * TEX, rand = rng(seed * 7919);
         const [c, ctx] = makeCanvas(W, H);
-
-        // Tronco
+        const cx = W / 2;
+        // Sombra de contacto bajo la copa y tronco con volumen.
+        const ground = ctx.createRadialGradient(cx, H - 5, 2, cx, H - 5, W * 0.27);
+        ground.addColorStop(0, 'rgba(20,28,16,0.34)'); ground.addColorStop(1, 'rgba(20,28,16,0)');
+        ctx.fillStyle = ground; ctx.fillRect(cx - W * 0.3, H - 18, W * 0.6, 18);
         const tw = Math.round(trunkW * TEX), th = Math.round(trunkH * TEX);
-        const tx = Math.round(W / 2 - tw / 2), ty = H - th;
-        ctx.fillStyle = bark; ctx.fillRect(tx, ty, tw, th);
-        ctx.fillStyle = shade(bark, -0.12); ctx.fillRect(tx + tw - Math.round(tw * 0.3), ty, Math.round(tw * 0.3), th);
-        ctx.fillStyle = shade(bark, 0.08);
-        for (let i = 0; i < 8; i++) ctx.fillRect(tx + 2 + Math.floor(rand() * (tw - 6)), ty + Math.floor(rand() * th * 0.9), 1, 4 + Math.floor(rand() * 6));
-        ctx.fillStyle = bark; // raíces
-        ctx.fillRect(tx - 4, H - 6, 6, 6); ctx.fillRect(tx + tw - 2, H - 6, 6, 6);
-
-        // Copa: 3 pasadas (sombra -> base -> luz), blobs dentro de una elipse
-        const cx = W / 2, cy = H - th - (tilesH * TEX - th) * 0.42;
-        const rx = W / 2 - 6, ry = (H - th * 0.55) / 2 - 4;
-        const passes = [
-            { color: shade(leaf, -0.16), dx: 3, dy: 5, n: 46 },
-            { color: leaf, dx: 0, dy: 0, n: 40 },
-            { color: shade(leaf, 0.10), dx: -4, dy: -6, n: 26 },
-            { color: shade(leaf, 0.20), dx: -6, dy: -9, n: 12 },
-        ];
-        for (const p of passes) {
-            for (let i = 0; i < p.n; i++) {
-                const a = rand() * Math.PI * 2, d = Math.sqrt(rand()) * 0.78;
-                const r = 9 + Math.floor(rand() * 12);
-                disc(ctx, cx + Math.cos(a) * rx * d + p.dx, cy + Math.sin(a) * ry * d + p.dy, r, p.color);
-            }
+        const tx = Math.round(cx - tw / 2), ty = H - th;
+        const trunk = ctx.createLinearGradient(tx, 0, tx + tw, 0);
+        trunk.addColorStop(0, shade(bark, 0.16)); trunk.addColorStop(0.42, bark);
+        trunk.addColorStop(0.78, shade(bark, -0.13)); trunk.addColorStop(1, shade(bark, -0.28));
+        ctx.fillStyle = trunk;
+        ctx.beginPath(); ctx.moveTo(tx + 3, H); ctx.lineTo(tx + 2, ty + 8);
+        ctx.lineTo(tx + tw * 0.28, ty); ctx.lineTo(tx + tw * 0.78, ty + 2);
+        ctx.lineTo(tx + tw - 2, H); ctx.closePath(); ctx.fill();
+        // Raíces visibles y ramas que conectan con la copa.
+        ctx.fillStyle = shade(bark, -0.08);
+        ctx.beginPath(); ctx.moveTo(cx - 3, H - 18); ctx.lineTo(cx - 22, H - 3); ctx.lineTo(cx - 5, H - 7); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(cx + 3, H - 17); ctx.lineTo(cx + 22, H - 2); ctx.lineTo(cx + 5, H - 7); ctx.fill();
+        ctx.strokeStyle = shade(bark, 0.22); ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(cx, ty + 34); ctx.lineTo(cx - 24, ty + 8); ctx.moveTo(cx + 2, ty + 38); ctx.lineTo(cx + 25, ty + 10); ctx.stroke();
+        for (let i = 0; i < 12; i++) {
+            const x = tx + 3 + rand() * Math.max(1, tw - 6), y = ty + rand() * th * 0.88;
+            ctx.fillStyle = i % 3 ? shade(bark, 0.13) : shade(bark, -0.2);
+            ctx.fillRect(x, y, 1 + rand() * 2, 4 + rand() * 9);
         }
+        // Copa elipsoidal: capas de sombra, masa central y luces arriba/izquierda.
+        const cy = Math.max(20, H - th - (tilesH * TEX - th) * 0.46);
+        const rx = W * 0.46, ry = Math.min(H * 0.34, (H - th * 0.35) * 0.48);
+        const canopy = ctx.createRadialGradient(cx - rx * 0.28, cy - ry * 0.42, 3, cx, cy, Math.max(rx, ry));
+        canopy.addColorStop(0, shade(leaf, 0.22)); canopy.addColorStop(0.58, leaf); canopy.addColorStop(1, shade(leaf, -0.23));
+        ctx.fillStyle = canopy; ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+        const clusters = [
+            { x: -0.48, y: -0.12, r: 0.27, c: shade(leaf, 0.14) },
+            { x: -0.12, y: -0.48, r: 0.30, c: shade(leaf, 0.20) },
+            { x: 0.34, y: -0.34, r: 0.27, c: shade(leaf, 0.08) },
+            { x: 0.48, y: 0.12, r: 0.25, c: shade(leaf, -0.08) },
+            { x: 0.08, y: 0.40, r: 0.30, c: shade(leaf, -0.15) },
+            { x: -0.38, y: 0.30, r: 0.27, c: shade(leaf, -0.04) },
+        ];
+        for (const q of clusters) {
+            ctx.fillStyle = q.c; ctx.beginPath();
+            ctx.ellipse(cx + q.x * rx, cy + q.y * ry, rx * q.r, ry * q.r, q.x * 0.18, 0, Math.PI * 2); ctx.fill();
+        }
+        // Pequeños brillos y hojas sueltas, deterministas por seed.
+        for (let i = 0; i < 54; i++) {
+            const a = rand() * Math.PI * 2, d = Math.sqrt(rand()) * 0.84;
+            const x = cx + Math.cos(a) * rx * d, y = cy + Math.sin(a) * ry * d;
+            ctx.fillStyle = rand() < 0.72 ? shade(leaf, 0.17 + rand() * 0.08) : shade(leaf, -0.2);
+            ctx.beginPath(); ctx.ellipse(x, y, 2 + rand() * 3, 1.5 + rand() * 2.5, rand(), 0, Math.PI * 2); ctx.fill();
+        }
+        // Borde inferior más oscuro para separar copa y tronco.
+        ctx.strokeStyle = shade(leaf, -0.28); ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.ellipse(cx, cy + 1, rx - 1, ry - 1, 0, 0.08, Math.PI - 0.08); ctx.stroke();
         return c;
     },
 
@@ -332,10 +358,32 @@ export const ProceduralSprites = {
         const { seed = 1, tilesW = 2, tilesH = 1.5, color = '#8c8f96' } = o;
         const W = Math.round(tilesW * TEX), H = Math.round(tilesH * TEX), rand = rng(seed * 31337);
         const [c, ctx] = makeCanvas(W, H);
-        for (const [t, dx, dy, k] of [[-0.18, 2, 3, 1], [0, 0, 0, 0.92], [0.12, -3, -4, 0.55]])
-            for (let i = 0; i < 4; i++)
-                disc(ctx, W / 2 + (rand() - 0.5) * W * 0.4 * k + dx, H - 18 + (rand() - 0.5) * 10 * k + dy,
-                    Math.round((10 + rand() * 6) * k + 4), shade(color, t));
+        const cx = W / 2, baseY = H - 5;
+        // Sombra proyectada y silueta facetada irregular.
+        const shadow = ctx.createRadialGradient(cx, baseY, 2, cx, baseY, W * 0.42);
+        shadow.addColorStop(0, 'rgba(18,22,28,0.38)'); shadow.addColorStop(1, 'rgba(18,22,28,0)');
+        ctx.fillStyle = shadow; ctx.fillRect(0, baseY - 12, W, 18);
+        const pts = [
+            [0.08,0.82],[0.13,0.48],[0.29,0.22],[0.47,0.10],[0.68,0.16],
+            [0.88,0.43],[0.94,0.75],[0.78,0.91],[0.28,0.96]
+        ].map(([x,y]) => [W*x, (H-9)*y+3]);
+        const rockGrad = ctx.createLinearGradient(W*0.18, H*0.18, W*0.82, H*0.88);
+        rockGrad.addColorStop(0, shade(color, 0.2)); rockGrad.addColorStop(0.42, color); rockGrad.addColorStop(1, shade(color, -0.27));
+        ctx.fillStyle = rockGrad; ctx.beginPath(); ctx.moveTo(...pts[0]);
+        for (let i=1;i<pts.length;i++) ctx.lineTo(...pts[i]); ctx.closePath(); ctx.fill();
+        // Planos de piedra: cara iluminada, cara lateral y base oscura.
+        ctx.fillStyle = shade(color, 0.24); ctx.beginPath(); ctx.moveTo(...pts[0]); ctx.lineTo(...pts[1]); ctx.lineTo(...pts[2]); ctx.lineTo(...pts[3]); ctx.lineTo(W*0.43,H*0.57); ctx.lineTo(W*0.24,H*0.68); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = shade(color, -0.2); ctx.beginPath(); ctx.moveTo(W*0.55,H*0.48); ctx.lineTo(...pts[4]); ctx.lineTo(...pts[5]); ctx.lineTo(...pts[6]); ctx.lineTo(...pts[7]); ctx.lineTo(W*0.5,H*0.88); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = shade(color, -0.31); ctx.beginPath(); ctx.moveTo(...pts[7]); ctx.lineTo(...pts[8]); ctx.lineTo(...pts[0]); ctx.lineTo(W*0.5,H*0.88); ctx.closePath(); ctx.fill();
+        // Grietas, vetas y pequeños planos de luz.
+        for (let i=0;i<9;i++) {
+            const x = W*(0.2+rand()*0.62), y = H*(0.24+rand()*0.5);
+            ctx.strokeStyle = rand()<0.55 ? shade(color,-0.22) : shade(color,0.16);
+            ctx.lineWidth = 1 + rand()*1.2; ctx.beginPath(); ctx.moveTo(x,y);
+            ctx.lineTo(x+(rand()-0.5)*8,y+3+rand()*7); ctx.stroke();
+        }
+        ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath();
+        ctx.moveTo(W*0.27,H*0.29); ctx.lineTo(W*0.46,H*0.17); ctx.lineTo(W*0.57,H*0.24); ctx.lineTo(W*0.39,H*0.34); ctx.closePath(); ctx.fill();
         return c;
     },
 };
