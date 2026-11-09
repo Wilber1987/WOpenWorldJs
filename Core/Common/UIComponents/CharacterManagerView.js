@@ -43,7 +43,7 @@ export class CharacterManagerView extends HTMLElement {
     connectedCallback() {
         ComponentsManager.modalFunction(this);
         this._bindGlobalDragEvents();
-        //this.Update();
+        this.Update();
     }
 
     disconnectedCallback() {
@@ -486,6 +486,7 @@ export class CharacterManagerView extends HTMLElement {
             display: block;
             height: 100vh;            
             font-family: system-ui, -apple-system, sans-serif;
+            overflow: hidden;
         }
         
         w-character-view[active] {
@@ -496,7 +497,7 @@ export class CharacterManagerView extends HTMLElement {
         .character-view {  
             background: linear-gradient(135deg, #fbfbfd 0%, #a2a8b9 50%, #4c5a6b 100%);
             min-height: 100vh;
-            padding: 20px;
+            padding: 0px;
             box-sizing: border-box;
             color: #fff;
         }
@@ -508,7 +509,7 @@ export class CharacterManagerView extends HTMLElement {
             gap: 24px;
             max-width: 100%;
             margin: 0 auto;
-            padding: 20px;
+            padding: 0px;
             height: calc(100vh - 80px);
             .available-section {
                 grid-row: span 2;
@@ -522,7 +523,8 @@ export class CharacterManagerView extends HTMLElement {
                         height: 100vh;
                         position: relative;
                         bottom: 0;
-                        object-fit: cover;
+                        object-fit: contain;
+                        object-position: top;
                         width: 100%;
                     }
                 }

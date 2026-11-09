@@ -628,6 +628,9 @@ export class GameEngine {
             if (entity.type === 'npc' || entity.type === 'player' || entity.type === 'follower') {
                 /**@type {CharacterModel} */// @ts-ignore
                 const npc = entity.ref
+                if (npc.Stats.hp <= 0) {
+                    continue;
+                }
                 if (this.currentMap && !npc.isFollower) { // Added null check for currentMap
                     const mapData = npc.MapData?.find(d => d.name === this.currentMap?.name); // Added null check for currentMap
                     if (mapData?.rendered instanceof Function && mapData.rendered() == false) return;
@@ -862,6 +865,9 @@ export class GameEngine {
         // NPCs en el minimapa - usando solo posiciones desde MapData
         if (this.currentMap.NPCs) {
             for (const npc of this.currentMap.NPCs) {
+                 if (npc.isFollower || npc.Stats.hp <= 0) {
+                    continue;
+                }
                 const npcPositionData = this.currentMap._getNPCPosition(npc, this.currentMap);
                 ctx.fillStyle = '#ff6b6b'; // Color distintivo para NPCs
                 ctx.fillRect(npcPositionData.x * px - 1, npcPositionData.y * py - 1, 2, 2);
@@ -952,7 +958,7 @@ export class GameEngine {
         // ─── 2. Buscar en NPCs ───
         if (this.currentMap.NPCs) {
             for (const npc of this.currentMap.NPCs) {
-                if (npc.isFollower) {
+                if (npc.isFollower || npc.Stats.hp <= 0) {
                     continue
                 }
                 const mapData = npc.MapData?.find(data => data.name === this.currentMap?.name);

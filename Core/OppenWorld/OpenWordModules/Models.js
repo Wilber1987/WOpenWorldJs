@@ -178,7 +178,7 @@ export class GameMap {
         // 2. Verificar NPCs con colisión (usando SOLO MapData, sin recursión)
         if (this.NPCs) {
             for (const npc of this.NPCs) {
-                if (npc.isFollower) {
+                if (npc.isFollower || npc.Stats.hp <= 0) {
                     continue;
                 }
                 //TODO Skip NPCs sin colisión

@@ -75,7 +75,7 @@ export class CharacterModel {
             battle: props?.SpritesFrames?.battle ?? 25,
             attack: props?.SpritesFrames?.attack ?? 25,
             death: props?.SpritesFrames?.death ?? 1,
-            mainSprite: props?.SpritesFrames?.mainSprite ?? 25
+            mainSprite: props?.SpritesFrames?.mainSprite ?? 100
         }
         //estado del personaje
         /**@type {Number} */
@@ -183,6 +183,7 @@ export class CharacterModel {
         this.CharacterActive = undefined;
 
         this.floatingMessage = null;
+        this.battle_direction = "left";
     }
 
     RegisterWordMapCharacter = async (isFullPerspective = this.isFullPerspective) => {
@@ -478,11 +479,13 @@ export class CharacterModel {
 
             while (this.animTimer >= frameTime) {
                 this.animTimer -= frameTime;
-                frames = this.Sprites[this.state][this.direction];
-                this.animFrame = (this.animFrame + 1) % frames.length;
+                frames = isBattle ? this.Sprites[this.state][this.battle_direction] : this.Sprites[this.state][this.direction];
+                if (frames) {
+                    this.animFrame = (this.animFrame + 1) % frames.length;
+                }                
             }
         } catch (error) {
-            console.log(frames);
+            console.log(frames, moving, this.direction);
 
             console.error(error);
             console.table(this);
