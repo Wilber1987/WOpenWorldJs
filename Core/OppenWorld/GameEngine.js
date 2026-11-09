@@ -537,6 +537,8 @@ export class GameEngine {
         }
 
 
+        const objs = this.currentMap.objects;
+        for (const o of objs) if (o.drawGround) o.drawGround(ctx, this);
 
         const renderQueue = [];
 
@@ -544,13 +546,21 @@ export class GameEngine {
         if (this.currentMap?.objects) {
             for (const obj of this.currentMap.objects) {
                 //if (obj.icon || (obj.color && obj.color !== '')) {
+
+                if (obj.layer === 'ground') continue;
+                const sortY = obj.sortY ?? (obj.y + obj.h / 2);
+                const scale = this.getScale(obj.sortY ?? obj.y);
+                renderQueue.push({ type: 'object', ref: obj, sortY, scale });
+
+
+                /*
                 const scale = this.getScale(obj.y);
                 renderQueue.push({
                     type: 'object',
                     ref: obj,
                     sortY: obj.y + obj.h / 2,  // Centro del objeto para sorting
                     scale: scale
-                });
+                });*/
                 //}
             }
         }
@@ -638,8 +648,8 @@ export class GameEngine {
                 }
                 npc.draw(ctx, this.cam, entity.scale);
             } else if (entity.type === 'object') {
-                // @ts-ignore
-                this.BuildObject(ctx, entity.ref, entity.scale)
+                if (entity.ref.render) entity.ref.render(ctx, this, entity.scale);
+                else this.BuildObject(ctx, entity.ref, entity.scale);
             }
         }
 
@@ -1050,7 +1060,7 @@ export class GameEngine {
 
 
         const py = this.PlayerReferenYPosition(playerPy);
-        
+
         const px = playerPx// playerPx + offsetX;
 
 
@@ -1201,7 +1211,7 @@ export class GameEngine {
             const px = (char.x - this.cam.x) * TILE_SIZE * this.cam.zoom + this.cam.screenW / 2;
             const py = (char.y - this.cam.y) * TILE_SIZE * this.cam.zoom + this.cam.screenH / 2;
 
-            const bubbleY = this.PlayerReferenYPosition(py);        
+            const bubbleY = this.PlayerReferenYPosition(py);
             //const bubbleY = py - charDrawH - 15 * this.cam.zoom; // 15px de margen sobre la cabeza
 
             // 4. Efecto de desvanecimiento (fade-out) en los últimos 500ms
