@@ -1,6 +1,7 @@
 //@ts-check
 
 import { TimeSystem } from '../../Common/TimeSystem.js';
+import { FlowData } from '../VisualNovelModules.js';
 
 /**
  * Evaluador de condiciones para comandos if/choice
@@ -19,7 +20,7 @@ export class ConditionEvaluator {
     
     /**
      * Evalúa una condición
-     * @param {boolean | import('../VisualNovelEngine.js').Condition | Function} condition 
+     * @param {import('../VisualNovelEngine.js').Condition|Function|Boolean|FlowData} condition 
      * @returns {boolean}
      */
     evaluate(condition) {
@@ -44,6 +45,7 @@ export class ConditionEvaluator {
         }
         
         // Objeto condición
+        // @ts-ignore
         return this._evaluateObject(condition);
     }
     
