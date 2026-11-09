@@ -302,7 +302,7 @@ export class BattleSystem extends HTMLElement {
         }
 
         // Verificar que el NPC tenga sprites cargados
-        if (!npc.Sprites || !npc.Sprites.idle || !npc.Sprites.idle[direction]) {
+        if (!npc.Sprites || !npc.Sprites.battle || !npc.Sprites.battle[direction] || !npc.Sprites.death[direction] || !npc.Sprites.attack[direction]) {
             this._drawCharacterFallback(ctx, npc, drawPos);
         } else {
             const currentState = npc.BattleState ?? this.BasicSprite;
@@ -511,7 +511,7 @@ export class BattleSystem extends HTMLElement {
         // Dibujar aliados (cols 0-3)
         allies.slice(0, 6).forEach((ally, index) => {
             const { col, row } = this._getGridPosition(index, true);
-            ally.direction = "right"
+            ally.battle_direction = "right"
             if (ally.Stats.hp == 0) {
                 ally.BattleState = this.DeathSprite
             }
@@ -521,7 +521,7 @@ export class BattleSystem extends HTMLElement {
         // Dibujar enemigos (cols 4-7)
         enemies.slice(0, 6).forEach((enemy, index) => {
             const { col, row } = this._getGridPosition(index, false);
-            enemy.direction = "left"
+            enemy.battle_direction = "left"
             if (enemy.Stats.hp == 0) {
                 enemy.BattleState = this.DeathSprite
             }

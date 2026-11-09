@@ -43,7 +43,7 @@ export class CharacterManagerView extends HTMLElement {
     connectedCallback() {
         ComponentsManager.modalFunction(this);
         this._bindGlobalDragEvents();
-        //this.Update();
+        this.Update();
     }
 
     disconnectedCallback() {
@@ -89,12 +89,12 @@ export class CharacterManagerView extends HTMLElement {
     }
 
     async Update() {
-        
+
         if (this.Characters.length > 0) {
-            const leader = this.Characters.find(c => c.partyLeader) ?? this.Characters[0]    
+            const leader = this.Characters.find(c => c.partyLeader) ?? this.Characters[0]
             const sp = await leader.loadSpriteSequence(
                 `Media/assets/sprites/${leader.Name}/${leader.Outfits[0]}/mainSprite/`, leader.SpritesFrames.mainSprite
-            )       
+            )
             this.CharacterLeaderSprite.innerHTML = "";
             const characterContainer = new CharacterContainer(leader.Name, sp);
             this.CharacterLeaderSprite.append(characterContainer)
@@ -454,13 +454,12 @@ export class CharacterManagerView extends HTMLElement {
     /**
     * @param {Array<CharacterModel>} characters 
     */
-    registerCharacter(...characters) {
+    async registerCharacter(...characters) {
         this.Characters.push(...characters);
-        if (this.oppenWorld) {
-            this.Characters.forEach(char => this.oppenWorld?.RegisterCharacter(char))
-        }
-        if (this.vnEngine) {
-            this.Characters.forEach(char => this.vnEngine?.RegisterCharacter(char))
+        if (this.oppenWorld || this.vnEngine) {
+            for (const char of this.Characters) {
+                await this.oppenWorld?.RegisterCharacter(char)
+            }
         }
         this.update();
     }
@@ -486,6 +485,7 @@ export class CharacterManagerView extends HTMLElement {
             display: block;
             height: 100vh;            
             font-family: system-ui, -apple-system, sans-serif;
+            overflow: hidden;
         }
         
         w-character-view[active] {
@@ -496,7 +496,7 @@ export class CharacterManagerView extends HTMLElement {
         .character-view {  
             background: linear-gradient(135deg, #fbfbfd 0%, #a2a8b9 50%, #4c5a6b 100%);
             min-height: 100vh;
-            padding: 20px;
+            padding: 0px;
             box-sizing: border-box;
             color: #fff;
         }
@@ -508,7 +508,7 @@ export class CharacterManagerView extends HTMLElement {
             gap: 24px;
             max-width: 100%;
             margin: 0 auto;
-            padding: 20px;
+            padding: 0px;
             height: calc(100vh - 80px);
             .available-section {
                 grid-row: span 2;
@@ -522,7 +522,8 @@ export class CharacterManagerView extends HTMLElement {
                         height: 100vh;
                         position: relative;
                         bottom: 0;
-                        object-fit: cover;
+                        object-fit: contain;
+                        object-position: top;
                         width: 100%;
                     }
                 }

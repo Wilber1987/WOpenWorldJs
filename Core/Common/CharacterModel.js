@@ -75,7 +75,7 @@ export class CharacterModel {
             battle: props?.SpritesFrames?.battle ?? 25,
             attack: props?.SpritesFrames?.attack ?? 25,
             death: props?.SpritesFrames?.death ?? 1,
-            mainSprite: props?.SpritesFrames?.mainSprite ?? 25
+            mainSprite: props?.SpritesFrames?.mainSprite ?? 100
         }
         //estado del personaje
         /**@type {Number} */
@@ -117,7 +117,7 @@ export class CharacterModel {
         // Historia del personaje
         /**@type {String} */
         this.Backstory = props?.Backstory ??
-            `Este es ${name}, un ${this.isFemale ? 'valiente heroína' : 'valiente héroe'} con una historia fascinante. Ha recorrido muchos lugares y enfrentado numerosos desafíos para llegar hasta donde está ahora.`;
+            `Este es ${name}, un ${this.isFemale ? 'valiente heroína' : 'valiente héroe'} ...`;
         // Estado actual
         /**@type {String} */
         this.currentState = props?.currentState ?? "Normal";
@@ -183,6 +183,7 @@ export class CharacterModel {
         this.CharacterActive = undefined;
 
         this.floatingMessage = null;
+        this.battle_direction = "left";
     }
 
     RegisterWordMapCharacter = async (isFullPerspective = this.isFullPerspective) => {
@@ -192,7 +193,7 @@ export class CharacterModel {
         this.isFullPerspective = isFullPerspective;
         this.isNPC = false;
         this.isBasicRegistered = false;
-        this.ChargeBasicSprites(isFullPerspective);
+        await this.ChargeBasicSprites(isFullPerspective);
         this.Sprites.walk = {
             down: await this.loadSpriteSequence(
                 `Media/assets/sprites/${this.SpritesDataAssets}/wd/`, this.SpritesFrames.walk
@@ -478,11 +479,13 @@ export class CharacterModel {
 
             while (this.animTimer >= frameTime) {
                 this.animTimer -= frameTime;
-                frames = this.Sprites[this.state][this.direction];
-                this.animFrame = (this.animFrame + 1) % frames.length;
+                frames = isBattle ? this.Sprites[this.state][this.battle_direction] : this.Sprites[this.state][this.direction];
+                if (frames) {
+                    this.animFrame = (this.animFrame + 1) % frames.length;
+                }                
             }
         } catch (error) {
-            console.log(frames);
+            console.log(frames, moving, this.direction);
 
             console.error(error);
             console.table(this);
