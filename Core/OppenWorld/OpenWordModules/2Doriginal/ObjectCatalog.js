@@ -10,8 +10,9 @@
 //   shadow           -> false para desactivar la sombra automática
 //   minimap          -> color en el minimapa
 // Todos los objetos, incluso los más simples (caja, barril), tienen huella + visual + sortY.
-// --------------------------------------------------
-import { TEX, rng, shade, makeCanvas, disc, line, tri, ProceduralSprites, SPRITE_SCALE } from "./ProceduralTextures.js";
+// --------------------------------------
+import { ProceduralSprites, SPRITE_SCALE } from "./ProceduralTextures.js";
+import  { TEX, rng, shade, makeCanvas, disc, line, tri } from "./ProceduralTextures.js";
 
 /** @typedef {{w:number,h:number}} FP */
 /** @typedef {{w:number,h:number,offsetX?:number,offsetY?:number}} Vis */
@@ -31,11 +32,32 @@ const T = TEX;
 const px = (n) => Math.round(n * T);
 
 /** Cara frontal + cara superior de una caja (vista 3/4) */
-function boxFaces(ctx, x, yBottom, w, frontH, topH, color) {
-    ctx.fillStyle = shade(color, -0.12); ctx.fillRect(x, yBottom - frontH, w, frontH);        // frente
-    ctx.fillStyle = shade(color, 0.12); ctx.fillRect(x, yBottom - frontH - topH, w, topH);    // tapa
-    ctx.fillStyle = shade(color, -0.28);                                                       // contorno inferior
-    ctx.fillRect(x, yBottom - 1, w, 1); ctx.fillRect(x, yBottom - frontH, w, 1);
+function boxFaces(ctx, x, yBottom, w, frontH, topH, color) {    ctx.fillStyle = shade(color, -0.12); ctx.fillRect(x, yBottom - frontH, w, frontH);        // frente
+   // Sombra de contacto superior (Oclusión ambiental)
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(x, yBottom - frontH - topH - 2, w, 2);
+
+    // Tapa superior (Luz directa)
+    const topGrad = ctx.createLinearGradient(x, yBottom - frontH - topH, x, yBottom - frontH);
+    topGrad.addColorStop(0, shade(color, 0.25));
+    topGrad.addColorStop(1, shade(color, 0.05));
+    ctx.fillStyle = topGrad;
+    ctx.fillRect(x, yBottom - frontH - topH, w, topH);
+
+    // Frente principal (Tono base con gradiente vertical de profundidad)
+    const frontGrad = ctx.createLinearGradient(x, yBottom - frontH, x, yBottom);
+    frontGrad.addColorStop(0, shade(color, -0.05));
+    frontGrad.addColorStop(1, shade(color, -0.35));
+    ctx.fillStyle = frontGrad;
+    ctx.fillRect(x, yBottom - frontH, w, frontH);
+
+    // Borde de brillo especular superior en la tapa
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.fillRect(x, yBottom - frontH - topH, w, 1);
+    
+    // Contorno de profundidad inferior
+    ctx.fillStyle = shade(color, -0.5);
+    ctx.fillRect(x, yBottom - 1, w, 1);
 }
 
 /** @type {Object<string, ObjectDef>} */
@@ -201,6 +223,7 @@ export const OBJECT_DEFS = {
             ctx.fillStyle = '#a56f36'; ctx.fillRect(7, 14, 4, H - 18);
             ctx.fillStyle = '#3d3d44'; ctx.fillRect(5, 22, W - 10, 3); ctx.fillRect(5, H - 14, W - 10, 3);
             disc(ctx, W / 2, 14, 11, '#a56f36'); disc(ctx, W / 2, 14, 8, '#c38a4a'); disc(ctx, W / 2, 14, 2, '#8a5a2b');
+
         },
         minimap: '#8a5a2b',
     },
@@ -390,8 +413,7 @@ export const CATEGORIES = [...new Set(Object.values(OBJECT_DEFS).map(d => d.cate
 /**
  * Construye el canvas del sprite de una definición.
  * @param {ObjectDef} def @param {FP} fp @param {Vis} vis @param {any} o
- */
-export function buildSprite(def, fp, vis, o = {}) {
+ */export function buildSprite(def, fp, vis, o = {}) {
     const W = px(vis.w);
     const H = px(vis.h);
 

@@ -7,7 +7,7 @@
 // --------------------------------------------------
 
 export const TEX = 32; // px por tile en las texturas generadas
-export const SPRITE_SCALE = 3;  // Resolución interna
+export const SPRITE_SCALE = 10;  // Resolución interna
 
 /** PRNG determinista (mulberry32) */
 export function rng(seed) {
@@ -333,10 +333,34 @@ export const ProceduralSprites = {
         const { seed = 1, tilesW = 2, tilesH = 1.5, color = '#8c8f96' } = o;
         const W = Math.round(tilesW * TEX), H = Math.round(tilesH * TEX), rand = rng(seed * 31337);
         const [c, ctx] = makeCanvas(W, H);
-        for (const [t, dx, dy, k] of [[-0.18, 2, 3, 1], [0, 0, 0, 0.92], [0.12, -3, -4, 0.55]])
-            for (let i = 0; i < 4; i++)
-                disc(ctx, W / 2 + (rand() - 0.5) * W * 0.4 * k + dx, H - 18 + (rand() - 0.5) * 10 * k + dy,
-                    Math.round((10 + rand() * 6) * k + 4), shade(color, t));
+        const cx = W / 2, baseY = H - 5;
+        // Sombra proyectada y silueta facetada irregular.
+        const shadow = ctx.createRadialGradient(cx, baseY, 2, cx, baseY, W * 0.42);
+        shadow.addColorStop(0, 'rgba(18,22,28,0.38)'); shadow.addColorStop(1, 'rgba(18,22,28,0)');
+        ctx.fillStyle = shadow; ctx.fillRect(0, baseY - 12, W, 18);
+        const pts = [
+            [0.08, 0.82], [0.13, 0.48], [0.29, 0.22], [0.47, 0.10], [0.68, 0.16],
+            [0.88, 0.43], [0.94, 0.75], [0.78, 0.91], [0.28, 0.96]
+        ].map(([x, y]) => [W * x, (H - 9) * y + 3]);
+        const rockGrad = ctx.createLinearGradient(W * 0.18, H * 0.18, W * 0.82, H * 0.88);
+        rockGrad.addColorStop(0, shade(color, 0.2)); rockGrad.addColorStop(0.42, color); rockGrad.addColorStop(1, shade(color, -0.27));
+        ctx.fillStyle = rockGrad; ctx.beginPath(); ctx.moveTo(...pts[0]);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(...pts[i]); ctx.closePath(); ctx.fill();
+        // Planos de piedra: cara iluminada, cara lateral y base oscura.
+        ctx.fillStyle = shade(color, 0.24); ctx.beginPath(); ctx.moveTo(...pts[0]); ctx.lineTo(...pts[1]); ctx.lineTo(...pts[2]); ctx.lineTo(...pts[3]); ctx.lineTo(W * 0.43, H * 0.57); ctx.lineTo(W * 0.24, H * 0.68); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = shade(color, -0.2); ctx.beginPath(); ctx.moveTo(W * 0.55, H * 0.48); ctx.lineTo(...pts[4]); ctx.lineTo(...pts[5]); ctx.lineTo(...pts[6]); ctx.lineTo(...pts[7]); ctx.lineTo(W * 0.5, H * 0.88); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = shade(color, -0.31); ctx.beginPath(); ctx.moveTo(...pts[7]); ctx.lineTo(...pts[8]); ctx.lineTo(...pts[0]); ctx.lineTo(W * 0.5, H * 0.88); ctx.closePath(); ctx.fill();
+        // Grietas, vetas y pequeños planos de luz.
+        for (let i = 0; i < 9; i++) {
+            const x = W * (0.2 + rand() * 0.62), y = H * (0.24 + rand() * 0.5);
+            ctx.strokeStyle = rand() < 0.55 ? shade(color, -0.22) : shade(color, 0.16);
+            ctx.lineWidth = 1 + rand() * 1.2; ctx.beginPath(); ctx.moveTo(x, y);
+            ctx.lineTo(x + (rand() - 0.5) * 8, y + 3 + rand() * 7); ctx.stroke();
+        }
+        ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath();
+        ctx.moveTo(W * 0.27, H * 0.29); ctx.lineTo(W * 0.46, H * 0.17); ctx.lineTo(W * 0.57, H * 0.24); ctx.lineTo(W * 0.39, H * 0.34); ctx.closePath(); ctx.fill();
         return c;
     },
 };
+
+

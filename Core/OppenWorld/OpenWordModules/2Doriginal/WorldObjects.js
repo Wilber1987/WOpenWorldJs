@@ -8,8 +8,8 @@
 //  - sortY      = y + h (la base). Quien tenga los pies "más arriba" (y menor) queda
 //                 detrás del objeto, igual que con un NPC.
 // --------------------------------------------------
-import { BlockObject } from "./Models.js";
-import { TILE_SIZE } from "../OpenWorldEngineView.js";
+import { BlockObject } from "../Models.js";
+import { TILE_SIZE } from "../../OpenWorldEngineView.js";
 import { ProceduralTextures, ProceduralSprites } from "./ProceduralTextures.js";
 
 export class WorldObject extends BlockObject {

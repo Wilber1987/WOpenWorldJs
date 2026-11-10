@@ -14,7 +14,7 @@
 // Opciones comunes de create/place: seed, variants (looks distintos, 6 por defecto; 0 = único), blocks, w/h (si el objeto es redimensionable),
 // Action, ActionQuestion, autoTrigger, fadeOnBehind, shadow:false, visual:{...}, color, leaf, ...
 // --------------------------------------------------
-import { GameMap, BlockObject } from "./Models.js";
+import { GameMap, BlockObject } from "../Models.js";
 import { WorldObject } from "./WorldObjects.js";
 import { OBJECT_DEFS, CATEGORIES, buildSprite } from "./ObjectCatalog.js";
 
@@ -62,8 +62,12 @@ export const ObjectLibrary = {
         // visual alto sobre la huella => se vuelve translúcido cuando alguien pasa detrás
         const fade = o.fadeOnBehind !== undefined ? o.fadeOnBehind : (vis.h - fp.h >= 1.5 ? 0.45 : null);
         const shadow = o.shadow === false || def.shadow === false ? null
-            : (o.shadow ?? { rx: Math.max(fp.w * 0.55, vis.w * 0.28), ry: Math.max(0.25, fp.h * 0.22), offsetY: -fp.h * 0.18, alpha: 0.2 });
-
+            : (o.shadow ?? {
+                rx: Math.max(fp.w * 0.62, vis.w * 0.34),
+                ry: Math.max(0.22, fp.h * 0.20),
+                offsetY: -fp.h * 0.14,
+                alpha: 0.28,
+            });
         const obj = new WorldObject(x, y, fp.w, fp.h, {
             ...o, // Action, ActionQuestion, autoTrigger, etc. pasan al BlockObject
             blocks: o.blocks ?? def.blocks ?? true,
