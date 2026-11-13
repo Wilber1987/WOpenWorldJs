@@ -6,20 +6,29 @@ import { ComponentsManager, html } from "../../WDevCore/WModules/WComponentsTool
 import { css } from "../../WDevCore/WModules/WStyledRender.js";
 import { CharacterManagerView } from "./CharacterManagerView.js";
 import { WAlertMessage } from "../../WDevCore/WComponents/WAlertMessage.js";
+import { GameEngine3D } from "../../OppenWorld/OpenWorld3DModules/GameEngine3D.js";
 
 export class GameMenu extends HTMLElement {
 
-    /** 
+    /**
      * @param {GameStartScreen} [screenView]
-     *  @param {CharacterManagerView} [characterView]
-    */
-    constructor(screenView, characterView) {
+     * @param {CharacterManagerView} [characterView]
+     * @param {GameEngine3D} [gameEngine]
+     */
+    constructor(screenView, characterView, gameEngine) {
         super();
+
         this.attachShadow({ mode: 'open' });
         this.shadowRoot?.append(this.CustomStyle);
-        this.screenView = screenView
-        this.Draw();
+
+        this.screenView = screenView;
         this.CharacterView = characterView;
+
+        this.gameEngine =
+            gameEngine ??
+            null;
+
+        this.Draw();
     }
     connectedCallback() { }
     Draw = async () => {
@@ -99,9 +108,11 @@ export class GameMenu extends HTMLElement {
         this.screenView?.hide();
     }
     handlerTimeSkipX2 = () => {
-        vnEngine.TimeSystem.autoAdvanceTime(4)
+        this.gameEngine?.advanceTime(2);
+        vnEngine.TimeSystem.autoAdvanceTime(2)
     }
     handlerTimeSkipX4 = () => {
+        this.gameEngine?.advanceTime(4);
         vnEngine.TimeSystem.autoAdvanceTime(4)
     }
     handlerCharacters = () => {

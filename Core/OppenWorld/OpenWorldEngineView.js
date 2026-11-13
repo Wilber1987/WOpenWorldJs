@@ -8,8 +8,8 @@ import { saveSystem, vnEngine } from "../VisualNovel/VisualNovelEngine.js";
 import { GameStartScreen } from "../Common/UIComponents/GameStartScreen.js";
 import { LoadScreen } from "../Common/UIComponents/LoadScreen.js";
 import { CharactersUtil } from "../Common/CharactersUtil.js";
-
-
+//new
+import { GameEngine3D } from "./OpenWorld3DModules/GameEngine3D.js";
 
 class OpenWorldEngineView extends HTMLElement {
     /**
@@ -66,6 +66,19 @@ class OpenWorldEngineView extends HTMLElement {
         }
         this.GameEngine = new GameEngine(this);
 
+        // Dentro del constructor, DESPUÉS de this.GameEngine = new GameEngine(this):
+        //ALTURA DE PERSONAJES
+        this.World3DEngine = new GameEngine3D(this, {
+            canvas: this.Canvas,
+            playerWidth: 2,
+            playerHeight: 3,
+            // Ajustar al formato real de CharacterModel.Sprites:
+            getCharacterTexture: (character) =>
+                character.Sprites?.[character.state ?? "idle"]?.[character.direction ?? "down"]?.[character.animFrame ?? 0]
+                ?? character.Sprites?.idle?.down?.[0]
+                ?? null
+        });
+
         saveSystem.openWorldEngine = this;
         /**@type { GameStartScreen? } */
         this.screenView = null;
@@ -103,22 +116,31 @@ class OpenWorldEngineView extends HTMLElement {
         </div>`;
         this.shadowRoot?.append(layout);
     }
-    StartEngine() {
-        this.GameEngine.active = true;
+    //VERSION 2D
+    // StartEngine() {
+    //     this.GameEngine.active = true;
 
-        const resizeCanvas = () => {
-            /**@type {DOMRect} */
-            // @ts-ignore
-            const rect = this.Canvas.parentElement?.getBoundingClientRect();
-            this.Canvas.style.width = rect.width + 'px'; this.Canvas.style.height = rect.height + 'px';
-            this.Canvas.width = Math.floor(rect.width * DPR); this.Canvas.height = Math.floor(rect.height * DPR);
-            this.GameEngine.cam.screenW = this.Canvas.width / DPR; this.GameEngine.cam.screenH = this.Canvas.height / DPR;
-            // minimap
-            this.MinimapCanvas.width = this.MinimapCanvas.clientWidth * DPR; this.MinimapCanvas.height = this.MinimapCanvas.clientHeight * DPR;
-        };
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-        requestAnimationFrame(this.GameEngine.update.bind(this.GameEngine));
+    //     const resizeCanvas = () => {
+    //         /**@type {DOMRect} */
+    //         // @ts-ignore
+    //         const rect = this.Canvas.parentElement?.getBoundingClientRect();
+    //         this.Canvas.style.width = rect.width + 'px'; this.Canvas.style.height = rect.height + 'px';
+    //         this.Canvas.width = Math.floor(rect.width * DPR); this.Canvas.height = Math.floor(rect.height * DPR);
+    //         this.GameEngine.cam.screenW = this.Canvas.width / DPR; this.GameEngine.cam.screenH = this.Canvas.height / DPR;
+    //         // minimap
+    //         this.MinimapCanvas.width = this.MinimapCanvas.clientWidth * DPR; this.MinimapCanvas.height = this.MinimapCanvas.clientHeight * DPR;
+    //     };
+    //     window.addEventListener('resize', resizeCanvas);
+    //     resizeCanvas();
+    //     requestAnimationFrame(this.GameEngine.update.bind(this.GameEngine));
+    // }
+    // VERSION 3D
+    StartEngine() {
+        // No arrancar GameEngine.update(): el loop Canvas antiguo queda inactivo.
+        // Conservamos active=true para evitar que su listener de window-focus
+        // llame resume() y reactive accidentalmente el renderer 2D.
+        this.World3DEngine.setSize();
+        this.World3DEngine.start();
     }
     /** 
      * @param {CharacterModel[]} aditionalMembers
@@ -147,6 +169,8 @@ class OpenWorldEngineView extends HTMLElement {
         this.Draw();
     }
     close = () => {
+        this.World3DEngine.stop();
+        //return
         ComponentsManager.modalFunction(this);
         setTimeout(() => {
             // @ts-ignore
@@ -159,6 +183,8 @@ class OpenWorldEngineView extends HTMLElement {
         ComponentsManager.modalFunction(this);
     }
     disconnectedCallback() {
+        this.World3DEngine?.dispose();
+
         // Detener el motor
         if (this.GameEngine) {
             this.GameEngine.active = false;
@@ -171,7 +197,9 @@ class OpenWorldEngineView extends HTMLElement {
      * @param {GameMap} map
      */
     AddMap(map) {
+        //TODO OLD
         this.GameEngine.addMap(map);
+        this.World3DEngine.addMap(map);
     }
     /**
      * @param {string} mapName
@@ -182,10 +210,14 @@ class OpenWorldEngineView extends HTMLElement {
         if (!this.isConnected) {
             this.Start(false);
         }
+        this.World3DEngine.GoToMap(
+            mapName,
+            Number.isFinite(xPos) && Number.isFinite(yPos) ? { x: xPos, y: yPos } : undefined
+        );
         this.StartEngine()
         // @ts-ignore
-        this.GameEngine.GoToMap(mapName,
-            xPos && yPos ? { x: xPos, y: yPos } : undefined);
+        //this.GameEngine.GoToMap(mapName,
+        //   xPos && yPos ? { x: xPos, y: yPos } : undefined);
     }
     Start(autoConnectMap = true) {
         document.body.append(this);
@@ -227,6 +259,13 @@ class OpenWorldEngineView extends HTMLElement {
         else if (hour >= 20 || hour < 1) time = "time-night";
         else if (hour >= 1 || hour < 5) time = "time-late-night";
         this.Canvas.className = time;
+    }
+
+    attachOpenWorld3D(view, options = {}) {
+        view.World3DEngine = new GameEngine3D(view, {
+            canvas: view.Canvas,
+            ...options
+        });
     }
 
     CustomStyle = css`

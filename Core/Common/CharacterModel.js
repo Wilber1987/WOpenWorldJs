@@ -358,7 +358,7 @@ export class CharacterModel {
                     CharacterModel.SpriteCache.set(src, img);
                     resolve(img);
                 };
-                img.onerror = (err) => {                    
+                img.onerror = (err) => {
                     console.warn(`❌ Failed to load sprite: ${src}`, err);
                     CharacterModel.SpriteCache.set(src, img);
                     resolve(img);
@@ -482,7 +482,7 @@ export class CharacterModel {
                 frames = isBattle ? this.Sprites[this.state][this.battle_direction] : this.Sprites[this.state][this.direction];
                 if (frames) {
                     this.animFrame = (this.animFrame + 1) % frames.length;
-                }                
+                }
             }
         } catch (error) {
             console.log(frames, moving, this.direction);
@@ -526,33 +526,51 @@ export class CharacterModel {
     }
 
     /**
-     * Verifica si el NPC ocupa una posición específica en el grid
-     * @param {number} tx - Coordenada X del tile a verificar
-     * @param {number} ty - Coordenada Y del tile a verificar  
-     * @param {{posX: number, posY: number}} mapData - Datos de posición del NPC
-     * @returns {boolean}
+     * Verifica si el NPC ocupa un tile específico.
+     *
+     * IMPORTANTE:
+     * - No usa `height` visual.
+     * - No usa `scale` visual.
+     * - Usa footprint lógico de colisión.
+ */
+    /**
+     * Rectángulo de colisión CENTRADO en los pies del personaje.
+     * Es la única fuente de verdad para colisión, debug y minimapa.
+     * @param {{posX?: number, posY?: number}} [mapData]
+     */
+    getCollisionRect(mapData) {
+        const posX = Number.isFinite(mapData?.posX) ? mapData.posX : this.x;
+        const posY = Number.isFinite(mapData?.posY) ? mapData.posY : this.y;
+
+        const w = Math.max(0.1, this.collisionWidth ?? this.width ?? 1);
+        const d = Math.max(0.1, this.collisionDepth ?? 1);
+
+        return {
+            centerX: posX,
+            centerY: posY,
+            w,
+            d,
+            minX: posX - w / 2,
+            maxX: posX + w / 2,
+            minY: posY - d / 2,
+            maxY: posY + d / 2
+        };
+    }
+
+    /**
+     * ¿El tile (tx,ty) intersecta el rectángulo de colisión centrado?
+     * El tile cubre [tx, tx+1) × [ty, ty+1).
+     * @param {number} tx
+     * @param {number} ty
+     * @param {{posX?: number, posY?: number}} [mapData]
      */
     occupies(tx, ty, mapData) {
-        // Posición base del NPC (donde están sus "pies")
-        const npcTileX = Math.floor(mapData.posX);
-        const npcTileY = Math.floor(mapData.posY);
+        const r = this.getCollisionRect(mapData);
 
-        // Tamaño del NPC en tiles
-        const width = (this.width ?? 1) * this.scale;
-        const height = this.height ?? 1.5;
-        // 🔄 CORRECCIÓN: El personaje se dibuja hacia ARRIBA desde (posX, posY)
-        // Por lo tanto, ocupa tiles desde Y hacia valores MENORES (hacia arriba en pantalla)
-        const tilesHeight = Math.ceil(height);
-        const occupiedMinY = npcTileY - tilesHeight + 1;  // ⬅️ Tile más alto que ocupa
-        const occupiedMaxY = npcTileY;                     // ⬅️ Tile base (pies)
-
-        const tilesWidth = Math.ceil(width);
-        const occupiedMinX = npcTileX - tilesWidth;
-        const occupiedMaxX = npcTileX;
-
-        // Verificar si el tile (tx, ty) está dentro del área ocupada
-        return tx >= occupiedMinX && tx <= occupiedMaxX &&
-            ty >= occupiedMinY && ty <= occupiedMaxY;
+        return (
+            tx + 1 > r.minX && tx < r.maxX &&
+            ty + 1 > r.minY && ty < r.maxY
+        );
     }
 
     isDeath = () => {

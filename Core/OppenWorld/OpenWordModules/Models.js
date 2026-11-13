@@ -1,9 +1,8 @@
 //@ts-check
 // --------------------------------------------------
 // Models
-
 import { CharacterModel } from "../../Common/CharacterModel.js";
-
+import { WorldObject } from "../OpenWorld3DModules/Objects/WorldObjectModels.js";
 
 // --------------------------------------------------
 export class BlockObject {
@@ -56,12 +55,78 @@ export class BlockObject {
         const occupiedMaxX = npcTileX;
 
         // Verificar si el tile (tx, ty) está dentro del área ocupada
-       // return tx >= occupiedMinX && tx <= occupiedMaxX &&
+        // return tx >= occupiedMinX && tx <= occupiedMaxX &&
         //    ty >= occupiedMinY && ty <= occupiedMaxY;
-
-
-
         return tx >= this.x && tx < this.x + this.w && ty >= this.y && ty < this.y + this.h;
+    }
+    render(engine) {
+        if (this.rendered) return;
+
+        const THREE = engine.THREE;
+
+        const geometry = new THREE.BoxGeometry(
+            this.width,
+            this.height,
+            this.depth
+        );
+
+        const material = new THREE.MeshStandardMaterial({
+            color: this.color,
+            roughness: 0.85,
+            metalness: 0
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+
+        // Centro geométrico de la caja.
+        mesh.position.set(
+            this.x + this.width / 2,
+            this.height / 2,
+            this.y + this.depth / 2
+        );
+
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+
+        mesh.name = "WorldBox";
+        mesh.userData.worldObject = this;
+
+        engine.renderer.scene.add(mesh);
+
+        this.AsingProps(mesh, engine, true);
+    }
+
+    /**
+     * @param {any} visual
+     * @param {any} engine
+     * @param {boolean} isRendered
+     */
+    AsingProps(visual, engine, isRendered) {
+        this.visual = visual;
+        this.engine = engine;
+        this.rendered = isRendered;
+    }
+
+    /**
+    * Elimina la representación visual.
+    */
+    destroy() {
+        if (this.visual) {
+            this.visual.removeFromParent();
+
+            this.visual.geometry.dispose();
+
+            const materials = Array.isArray(this.visual.material)
+                ? this.visual.material
+                : [this.visual.material];
+
+            materials.forEach(material => material.dispose());
+
+            this.visual = null;
+        }
+
+        this.rendered = false;
+        this.engine = null;
     }
 }
 
@@ -118,7 +183,6 @@ export class GameMap {
         this.factorPerspectiva = opts.factorPerspectiva ?? 0.5;
         this.usarPerspectiva = opts.factorPerspectiva > 0;
         this.minScalePerspectiva = opts.minScalePerspectiva ?? this.getMinScale();
-        this.addLimits();
         this.NPCs.forEach(npc => {
             npc.ChargeBasicSprites()
         });
@@ -128,24 +192,24 @@ export class GameMap {
         }
     }
     getMinScale() {
-        console.log( this.minScalePerspectiva);
-        
+        console.log(this.minScalePerspectiva);
+
         return 0.3 //-1 / (this.factorPerspectiva + 1)/TODO
     }
-    addLimits() {
-        this.objects.push(new BlockObject(0, 0, this.w, this.minScalePerspectiva + 1, {
-            color: "rgba(0,0,0,0.05)"
-        }))
-        this.objects.push(new BlockObject(0, this.h - 1, this.w, 1, {
-            color: "rgba(0,0,0,0.05)"
-        }))
-        this.objects.push(new BlockObject(0, 0, 1, this.h, {
-            color: "rgba(0,0,0,0.05)"
-        }))
-        this.objects.push(new BlockObject(this.w - 1, 0, 1, this.h, {
-            color: "rgba(0,0,0,0.05)"
-        }))
+    place(object) {
+        if (!(object instanceof WorldObject)) {
+            throw new TypeError(
+                "GameMap.place() requiere una instancia de WorldObject"
+            );
+        }
+
+        this.objects ??= [];
+
+        this.objects.push(object);
+
+        return object;
     }
+
     /**
      * @param {BlockObject} mapObject
      */
@@ -168,33 +232,48 @@ export class GameMap {
      * @param {number} ty
      * @param {number} scale
      */
-    isBlocked(tx, ty, scale) {
+    isBlocked(tx, ty, scale = 1) {
         if (tx < 0 || ty < 0 || tx >= this.w || ty >= this.h) return true;
 
-        // 1. Verificar objetos bloqueantes
+        // 1. Objetos bloqueantes.
         for (const o of this.objects) {
             if (o.occupies(tx, ty)) return true;
         }
-        // 2. Verificar NPCs con colisión (usando SOLO MapData, sin recursión)
+
+        // 2. NPCs con colisión.
         if (this.NPCs) {
-            for (const npc of this.NPCs) {
-                if (npc.isFollower || npc.Stats.hp <= 0) {
+            // 2. NPCs con colisión
+            for (const npc of this.NPCs ?? []) {
+                // Followers no bloquean como NPCs normales
+                if (npc.isFollower) continue;
+
+                // Muertos no bloquean
+                if ((npc.Stats?.hp ?? 1) <= 0) continue;
+
+                // NPCs configurados sin colisión
+                if (npc.collision === false) continue;
+
+                const mapData = npc.MapData?.find(d => d.name === this.name) ?? null;
+
+                // Si el NPC está oculto en este mapa, tampoco bloquea
+                if (
+                    mapData?.rendered instanceof Function &&
+                    mapData.rendered() === false
+                ) {
                     continue;
                 }
-                //TODO Skip NPCs sin colisión
-                if (npc.collision === false) continue;
-                // Obtener posición DIRECTAMENTE desde MapData
-                let npcX, npcY;
-                if (npc.MapData) {
-                    const mapData = npc.MapData.find(d => d.name === this.name);
-                    if (mapData) {
-                        npcX = mapData.posX;
-                        npcY = mapData.posY;
-                    }
-                    // @ts-ignore
-                    if (npc.occupies(tx, ty, mapData, scale)) return true;
+
+                const posX = Number.isFinite(mapData?.posX) ? mapData.posX : npc.x;
+                const posY = Number.isFinite(mapData?.posY) ? mapData.posY : npc.y;
+
+                if (
+                    typeof npc.occupies === "function" &&
+                    npc.occupies(tx, ty, { posX, posY })
+                ) {
+                    return true;
                 }
             }
+
         }
 
         return false;
@@ -383,6 +462,5 @@ export class GameMap {
         console.log(this.NPCs.indexOf(DanaCharacter));
         this.NPCs.splice(this.NPCs.indexOf(DanaCharacter), 1);
     }
-
 
 }
