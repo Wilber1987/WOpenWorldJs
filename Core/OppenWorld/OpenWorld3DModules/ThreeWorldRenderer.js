@@ -73,11 +73,6 @@ export class ThreeWorldRenderer {
         // Rotación sobre el eje frontal de la cámara.
         this.cameraRoll = 0;
 
-        this.cameraDistance = options.cameraDistance ?? 24;
-
-        this.minCameraZoom = options.minCameraZoom ?? 0.5;
-        this.maxCameraZoom = options.maxCameraZoom ?? 3;
-
         // Altura a la que enfoca la cámara cuando el zoom es máximo.
         // Debe ser aprox. la mitad de la altura del sprite (playerHeight / 2).
         this.focusHeightAtMaxZoom = options.focusHeightAtMaxZoom ?? 1.8;
@@ -86,9 +81,25 @@ export class ThreeWorldRenderer {
         this.focusStartZoom = options.focusStartZoom ?? 1.5;
 
         // Altura actual suavizada del foco.
-        this._focusHeight = 0;
 
-        this.camera.zoom = options.cameraZoom ?? 1;
+        this._focusHeight = 0;
+        this.minCameraZoom = options.minCameraZoom ?? 2;
+        this.maxCameraZoom = options.maxCameraZoom ?? 10;
+
+        this.camera.zoom = options.cameraZoom ?? this.minCameraZoom;
+
+         // Orbita esférica alrededor del objetivo: yaw controla el giro horizontal.
+        // Orientación inicial de la cámara.
+        // Inclinación desde el horizonte.
+        // 58 grados ofrece una vista 3/4 más clara.
+        this.cameraYaw = THREE.MathUtils.degToRad(0);
+        this.cameraPitch = THREE.MathUtils.degToRad(25);
+        this.cameraRoll = THREE.MathUtils.degToRad(0);
+
+        this.cameraDistance = options.cameraDistance ?? 24;
+
+
+       
         this.camera.updateProjectionMatrix();
 
         // this.scene.add(new THREE.HemisphereLight(0xffffff, 0x59634b, 2));
@@ -204,21 +215,7 @@ export class ThreeWorldRenderer {
         this.playerTexture = null;
         this.mapSize = { width: 1, height: 1 };
         this.target = new THREE.Vector3();
-        // Orbita esférica alrededor del objetivo: yaw controla el giro horizontal.
-        // Orientación inicial de la cámara.
-        this.cameraYaw = 0;
-
-        // Inclinación desde el horizonte.
-        // 58 grados ofrece una vista 3/4 más clara.
-        this.cameraYaw = THREE.MathUtils.degToRad(0);
-        this.cameraPitch = THREE.MathUtils.degToRad(25);
-        this.cameraRoll = THREE.MathUtils.degToRad(0);
-
-        this.cameraDistance = options.cameraDistance ?? 24;
-
-
-        this.minCameraZoom = options.minCameraZoom ?? 0.55;
-        this.maxCameraZoom = options.maxCameraZoom ?? 10;
+       
         this._resizeObserver = new ResizeObserver(() => this.resize());
         this._resizeObserver.observe(canvas.parentElement ?? canvas);
         this.resize();

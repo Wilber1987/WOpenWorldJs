@@ -5,34 +5,34 @@ import { css } from "../WDevCore/WModules/WStyledRender.js";
 
 export class VisualNovelView extends HTMLElement {
 
-    constructor() {
-        super();
-        this.attachShadow({ mode: 'open' });
-        this.append(this.ComponentStyle)
-        this.shadowRoot?.append(this.CustomStyle);
-        this.UI = this.BuildUI()
-        this.Draw();
-    }
-    connectedCallback() {
-        ComponentsManager.modalFunction(this);
-    }
-    Draw = async () => {
-        this.shadowRoot?.append(this.UI)
-    };
-    /**
-     * @param {string} uiElementId
-     * @returns {HTMLElement}
-     */
-    GetUIElement(uiElementId) {
-        let uiElement = this.shadowRoot?.querySelector(`#${uiElementId}`);
-        // @ts-ignore
-        return uiElement;
-    }
-    update() {
-        this.Draw();
-    }
-    BuildUI() {
-        return html`<div id="game-container">
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+    this.append(this.ComponentStyle)
+    this.shadowRoot?.append(this.CustomStyle);
+    this.UI = this.BuildUI()
+    this.Draw();
+  }
+  connectedCallback() {
+    ComponentsManager.modalFunction(this);
+  }
+  Draw = async () => {
+    this.shadowRoot?.append(this.UI)
+  };
+  /**
+   * @param {string} uiElementId
+   * @returns {HTMLElement}
+   */
+  GetUIElement(uiElementId) {
+    let uiElement = this.shadowRoot?.querySelector(`#${uiElementId}`);
+    // @ts-ignore
+    return uiElement;
+  }
+  update() {
+    this.Draw();
+  }
+  BuildUI() {
+    return html`<div id="game-container">
             <div id="background"></div>
             <div id="character-sprites"></div>
             <div id="text-container">
@@ -49,21 +49,21 @@ export class VisualNovelView extends HTMLElement {
             <div id="game-time-display"></div>
             <div id="character-view-container"></div>
         </div>`
+  }
+  Connect() {
+    if (!this.isConnected) {
+      document.body.append(this);
     }
-    Connect() {
-        if (!this.isConnected) {
-            document.body.append(this);
-        }
+  }
+  Disconnect() {
+    if (this.isConnected) {
+      ComponentsManager.modalFunction(this);
+      setTimeout(() => {
+        this.parentNode?.removeChild(this);
+      }, 500);
     }
-    Disconnect() {
-        if (this.isConnected) {
-            ComponentsManager.modalFunction(this);
-            setTimeout(() => {
-                this.parentNode?.removeChild(this);
-            }, 500);
-        }
-    }
-    ComponentStyle = css`
+  }
+  ComponentStyle = css`
         w-novel-view {
             position: absolute;
             opacity: 0;
@@ -74,12 +74,12 @@ export class VisualNovelView extends HTMLElement {
             bottom: 0;
             z-index: 10001;
             transition: all 1s;
-            background-color: #fff;
+            background-color: transparent;
             display: block;
             height:100vh;
         }
   `
-    CustomStyle = css`
+  CustomStyle = css`
         body {
           padding: 0;
           margin: 0;
@@ -101,9 +101,8 @@ export class VisualNovelView extends HTMLElement {
           position: relative;
           width: 100vw;
           /* Ocupa todo el ancho */
-          height: auto;
-          /* Altura ajustada según el aspect ratio */
-          aspect-ratio: 16 / 9;
+          height: 100vh;
+          /* Altura ajustada según el aspect ratio aspect-ratio: 16 / 9;*/
           max-width: 100%;
           max-height: 100vh;
           margin: 0 auto;
@@ -111,7 +110,7 @@ export class VisualNovelView extends HTMLElement {
           display: flex;
           justify-content: center;
           align-items: center;
-          background-color: black;
+          background-color: transparent;
           /* Fondo negro mientras se carga */
         }
 
@@ -142,12 +141,13 @@ export class VisualNovelView extends HTMLElement {
           left: 0;
         }
 
+        
         .character {
-          position: absolute;
-          height: 90%;
-          bottom: 0;
+            position: absolute;
+            height: 130%;
+            bottom: 0;
+            transform: translateY(30%);
         }
-
         .left {
           left: 0;
         }
@@ -597,7 +597,7 @@ export class VisualNovelView extends HTMLElement {
 
         .character.visible {
           opacity: 1;
-          transform: translateY(0);
+          transform: translateY(30%);
         }
 
         .character.left {
@@ -606,7 +606,7 @@ export class VisualNovelView extends HTMLElement {
 
         .character.center {
           left: 50%;
-          transform: translateX(-50%) translateY(0);
+          transform: translateX(-50%) translateY(30%);
         }
 
         .character.right {
