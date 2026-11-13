@@ -2,6 +2,7 @@
 // @ts-ignore
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 import { TextureManager } from "./Characters/TextureManager.js";
+import { Model3DManager } from "./Characters/Model3DManager.js";
 /**
  * Renderer 3D inicial. El plano del mapa usa X/Z:
  * - map.x -> world.x
@@ -21,6 +22,15 @@ export class ThreeWorldRenderer {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(options.background ?? "#87a9bd");
         this.textureManager = new TextureManager();
+
+        // 🧊 Gestor de modelos 3D exportados desde Blender (glTF/GLB).
+        this.model3d = new Model3DManager(this);
+
+        /** @type {import("./Characters/Model3DManager.js").Model3DInstance | null} */
+        this.playerModel = null;
+        /** @type {string | null} */
+        this._playerModelKey = null;
+        this._playerModelToken = 0;
         this.renderer = new THREE.WebGLRenderer({
             canvas,
             antialias: true,
@@ -402,17 +412,108 @@ export class ThreeWorldRenderer {
     }
 
     /**
-     * @param {{x:number,y:number}} position
+     * Carga (o reutiliza) el modelo 3D del jugador y oculta el sprite.
+     * Si la carga falla, el sprite sigue mostrándose.
+     *
+     * @param {any} character
+     * @param {{ height?: number }} [options]
+     * @returns {Promise<import("./Characters/Model3DManager.js").Model3DInstance | null>}
+     */
+    async loadPlayerModel(character, options = {}) {
+        const config = this.model3d.normalizeConfig(
+            character?.getModel3DConfig?.() ?? character?.model3d
+        );
+
+        if (!config?.url) return null;
+
+        const height = config.height ?? options.height ?? 3;
+        const key = `${config.url}|${height}`;
+
+        if (this.playerModel && this._playerModelKey === key) {
+            return this.playerModel;
+        }
+
+        this._playerModelKey = key;
+        const token = ++this._playerModelToken;
+
+        this._disposePlayerModel();
+
+        try {
+            const instance = await this.model3d.create(character, { height });
+
+            // Otra carga (o un cambio a sprite) ocurrió mientras se descargaba.
+            if (token !== this._playerModelToken) {
+                instance.dispose();
+                return null;
+            }
+
+            this.playerModel = instance;
+            this.scene.add(instance.root);
+
+            if (this.playerSprite) {
+                this.playerSprite.visible = false;
+            }
+
+            return instance;
+        } catch (error) {
+            console.warn(
+                "⚠️ No se pudo cargar el modelo 3D del jugador; se usará el sprite.",
+                error
+            );
+
+            if (token === this._playerModelToken) {
+                this._playerModelKey = null;
+            }
+
+            return null;
+        }
+    }
+
+    /**
+     * Elimina el modelo 3D actual del jugador y vuelve a permitir el sprite.
+     */
+    clearPlayerModel() {
+        this._playerModelToken++;
+        this._playerModelKey = null;
+        this._disposePlayerModel();
+    }
+
+    _disposePlayerModel() {
+        if (!this.playerModel) return;
+        this.playerModel.dispose();
+        this.playerModel = null;
+    }
+
+    /**
+     * @param {{x:number,y:number,direction?:string,state?:string,Stats?:any}} position
      * @param {{x:number,y:number,z?:number}} [cameraTarget]
+     * @param {number} [dt]
      */
 
-    updatePlayer(position, cameraTarget) {
+    updatePlayer(position, cameraTarget, dt = 1 / 60) {
+        // 🧊 Modelo 3D del jugador (si existe).
+        if (this.playerModel) {
+            this.playerModel.setPosition(position.x, position.y);
+            this.playerModel.setYaw(
+                this.model3d.resolveYaw(position, this.camera),
+                dt
+            );
+            this.playerModel.setState(position.state ?? "idle");
+            this.playerModel.setVisible((position.Stats?.hp ?? 1) > 0);
+            this.playerModel.update(dt);
+        }
+
         if (this.playerSprite) {
             this.playerSprite.position.set(
                 position.x,
                 0,
                 position.y
             );
+
+            // El modelo 3D sustituye al sprite del jugador.
+            if (this.playerModel) {
+                this.playerSprite.visible = false;
+            }
         }
 
         const target = cameraTarget
@@ -543,6 +644,11 @@ export class ThreeWorldRenderer {
         }
         this.playerTexture?.dispose();
         this.playerTexture = null;
+
+        // 🧊 Liberar modelos 3D (jugador y NPCs).
+        this.clearPlayerModel();
+        this.model3d?.dispose();
+
         this.renderer.dispose();
         this.textureManager.dispose();
 

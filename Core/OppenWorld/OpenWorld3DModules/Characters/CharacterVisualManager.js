@@ -57,7 +57,12 @@ export class CharacterVisualManager {
             lastSource: null,
             width: 1,
             height: 1,
-            indicator: null // 👈 NUEVO: Referencia al sprite indicador
+            indicator: null, // 👈 NUEVO: Referencia al sprite indicador
+            // 🧊 Soporte opcional de modelos 3D (Blender)
+            model: null,
+            modelKey: null,
+            modelFailedKey: null,
+            lastTick: 0
         };
 
         this.visuals.set(character, entry);
@@ -109,7 +114,10 @@ export class CharacterVisualManager {
             sp.userData.baseY = entry.height + 0.4;
             sp.visible = false;
 
-            entry.mesh.add(sp); // Se añade como hijo del mesh del personaje
+            // Se añade al sprite del personaje, o al modelo 3D si ya está activo,
+            // para que el indicador siga visible cuando se oculta el sprite.
+            const parent = entry.model?.root ?? entry.mesh;
+            parent.add(sp);
             entry.indicator = sp;
         }
 
@@ -192,6 +200,182 @@ export class CharacterVisualManager {
     }
 
     /**
+     * ¿El personaje usa un modelo 3D en lugar del sprite?
+     * Contrato: `character.Is3DModel() === true` cuando `model3d != null`.
+     * @param {any} character
+     */
+    _is3DModel(character) {
+        if (!character) return false;
+
+        if (typeof character.Is3DModel === "function") {
+            try {
+                return character.Is3DModel() === true;
+            } catch {
+                return false;
+            }
+        }
+
+        return character.model3d != null && character.model3d !== "";
+    }
+
+    /**
+     * Configuración normalizada del modelo 3D del personaje.
+     * @param {any} character
+     * @returns {{url: string, height?: number, scale?: number, yOffset?: number, rotationY?: number, animations?: Object.<string, string>, castShadow?: boolean} | null}
+     */
+    _getModelConfig(character) {
+        if (!character) return null;
+
+        if (typeof character.getModel3DConfig === "function") {
+            return character.getModel3DConfig();
+        }
+
+        const model = character.model3d;
+        if (!model) return null;
+        if (typeof model === "string") return { url: model };
+        return model.url ? model : null;
+    }
+
+    /**
+     * Giro del modelo 3D según la dirección (relativa a cámara) del personaje.
+     * @param {any} character
+     */
+    _resolveYaw(character) {
+        const manager = this.engine.renderer?.model3d;
+        if (manager?.resolveYaw) {
+            return manager.resolveYaw(character, this.engine.renderer?.camera);
+        }
+        return 0;
+    }
+
+    /**
+     * Delta de tiempo para animar el modelo (no altera la animación de sprites).
+     * @param {any} entry
+     */
+    _autoDt(entry) {
+        const now = performance.now();
+        const last = entry.lastTick || now;
+        entry.lastTick = now;
+        return Math.min(Math.max((now - last) / 1000, 0), 0.1);
+    }
+
+    /**
+     * Ajusta el indicador por encima de la altura real del personaje.
+     * @param {any} entry
+     */
+    _syncIndicator(entry) {
+        if (!entry?.indicator) return;
+        const baseY = entry.height + 0.4;
+        entry.indicator.userData.baseY = baseY;
+        entry.indicator.position.y = baseY;
+    }
+
+    /**
+     * Libera la instancia de modelo 3D y devuelve el indicador al sprite.
+     * @param {any} entry
+     */
+    _releaseModel(entry) {
+        if (entry.model) {
+            if (entry.indicator) {
+                entry.mesh.add(entry.indicator);
+            }
+
+            entry.model.dispose();
+            entry.model = null;
+        }
+
+        entry.modelKey = null;
+        entry.modelFailedKey = null;
+        entry.lastSource = null;
+    }
+
+    /**
+     * Carga y actualiza el modelo 3D del personaje.
+     * El sprite se mantiene como respaldo hasta que el modelo esté listo.
+     * @param {any} character
+     * @param {any} entry
+     * @param {{ visible?: boolean, height?: number, width?: number }} options
+     */
+    _updateModel(character, entry, options = {}) {
+        const config = this._getModelConfig(character);
+        if (!config?.url) return;
+
+        const height =
+            config.height ??
+            options.height ??
+            this.engine.options?.npcHeight ??
+            1.6;
+
+        const key = `${config.url}|${height}`;
+
+        if (entry.modelKey !== key) {
+            // Un modelo que ya falló no se reintenta en bucle.
+            if (entry.modelFailedKey === key) return;
+
+            this._releaseModel(entry);
+            entry.modelKey = key;
+
+            const manager = this.engine.renderer?.model3d;
+
+            if (!manager) {
+                entry.modelKey = null;
+                return;
+            }
+
+            manager.create(character, { height })
+                .then((instance) => {
+                    // El personaje cambió de modelo o salió del mapa mientras cargaba.
+                    if (entry.modelKey !== key || this.visuals.get(character) !== entry) {
+                        instance.dispose();
+                        return;
+                    }
+
+                    entry.model = instance;
+                    this.group.add(instance.root);
+
+                    entry.width = instance.width;
+                    entry.height = instance.height;
+
+                    // El indicador debe seguir visible con el sprite oculto.
+                    if (entry.indicator) {
+                        instance.root.add(entry.indicator);
+                    }
+
+                    this._syncIndicator(entry);
+
+                    instance.setPosition(character.x ?? 0, character.y ?? 0);
+                    instance.setYaw(this._resolveYaw(character));
+                    instance.setState(character.state ?? "idle");
+                    instance.setVisible(options.visible !== false);
+                })
+                .catch((error) => {
+                    console.warn(
+                        `⚠️ No se pudo cargar el modelo 3D de ${character?.Name ?? "NPC"}; se usará el sprite.`,
+                        error
+                    );
+                    entry.modelFailedKey = key;
+                    if (entry.modelKey === key) entry.modelKey = null;
+                });
+        }
+
+        const model = entry.model;
+        if (!model) return;
+
+        const visible = options.visible !== false;
+        const dt = this._autoDt(entry);
+
+        model.setVisible(visible);
+        if (!visible) return;
+
+        entry.height = model.height;
+
+        model.setPosition(character.x ?? 0, character.y ?? 0);
+        model.setYaw(this._resolveYaw(character), dt);
+        model.setState(character.state ?? "idle");
+        model.update(dt);
+    }
+
+    /**
      * Actualiza posición, textura y orientación del personaje.
      * @param {any} character
      * @param {{ visible?: boolean, height?: number, width?: number }} [options]
@@ -200,12 +384,24 @@ export class CharacterVisualManager {
         const entry = this.ensure(character);
         if (!entry) return;
 
+        const is3DModel = this._is3DModel(character);
+
+        if (is3DModel) {
+            this._updateModel(character, entry, options);
+        } else if (entry.model || entry.modelKey) {
+            // El personaje volvió a usar sprites.
+            this._releaseModel(entry);
+        }
+
         const visible = options.visible !== false;
         const source = visible ? this.resolveSource(character) : null;
 
         entry.mesh.visible = !!source;
 
-        if (!source) return;
+        if (!source) {
+            if (is3DModel && entry.model) entry.mesh.visible = false;
+            return;
+        }
 
         if (source !== entry.lastSource) {
             const texture = this.engine.renderer.textureManager?.get(source);
@@ -254,6 +450,11 @@ export class CharacterVisualManager {
             Math.atan2(dx, dz),
             0
         );
+
+        // 🧊 El modelo 3D sustituye al sprite una vez cargado.
+        if (is3DModel && entry.model) {
+            entry.mesh.visible = false;
+        }
     }
 
     /**
@@ -262,6 +463,8 @@ export class CharacterVisualManager {
     remove(character) {
         const entry = this.visuals.get(character);
         if (!entry) return;
+
+        this._releaseModel(entry);
 
         entry.mesh.removeFromParent();
         entry.mesh.geometry.dispose();

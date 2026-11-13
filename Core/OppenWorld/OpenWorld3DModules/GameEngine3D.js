@@ -538,7 +538,7 @@ export class GameEngine3D {
             }
 
             this._refreshPlayerTexture();
-            this.renderer.updatePlayer(player);
+            this.renderer.updatePlayer(player, undefined, dt);
         }
 
         // NPCs y followers.
@@ -617,6 +617,19 @@ export class GameEngine3D {
         const player = this.SelectedCharacter;
         if (!player) return;
 
+        // 🧊 Si el personaje tiene modelo 3D de Blender, se carga en lugar del sprite.
+        if (this._has3DModel(player)) {
+            this._refreshPlayerModel(player);
+
+            // Mientras el modelo carga, el sprite sigue funcionando como respaldo.
+            if (this.renderer.playerModel) return;
+        } else if (this._playerModelKey || this.renderer.playerModel) {
+            // Sin modelo 3D: liberar cualquier modelo previo y volver a sprites.
+            this._playerModelKey = null;
+            this._playerModelFailedKey = null;
+            this.renderer.clearPlayerModel();
+        }
+
         const resolver = this.options.getCharacterTexture;
 
         const state = player.state ?? "idle";
@@ -660,6 +673,62 @@ export class GameEngine3D {
             // @ts-ignore
             this._lastTextureSource = source;
         }
+    }
+
+    /**
+     * ¿El personaje tiene un modelo 3D (Blender) asociado?
+     * Contrato: `character.Is3DModel() === true` cuando `model3d != null`.
+     * @param {any} player
+     * @returns {boolean}
+     */
+    _has3DModel(player) {
+        if (!player) return false;
+
+        if (typeof player.Is3DModel === "function") {
+            try {
+                return player.Is3DModel() === true;
+            } catch {
+                return false;
+            }
+        }
+
+        return player.model3d != null && player.model3d !== "";
+    }
+
+    /**
+     * Carga el modelo 3D del jugador (una sola vez por modelo/altura).
+     * @param {any} player
+     */
+    _refreshPlayerModel(player) {
+        const config = typeof player.getModel3DConfig === "function"
+            ? player.getModel3DConfig()
+            : (typeof player.model3d === "string" ? { url: player.model3d } : player.model3d);
+
+        if (!config?.url) return;
+
+        const height = config.height ?? this.options.playerHeight ?? 3;
+        const key = `${config.url}|${height}`;
+
+        if (this._playerModelKey === key) return;
+        if (this._playerModelFailedKey === key) return;
+
+        this._playerModelKey = key;
+
+        this.renderer.loadPlayerModel(player, { height })
+            .then((instance) => {
+                if (!instance && this._playerModelKey === key) {
+                    // Falló la carga: no reintentar en bucle y conservar el sprite.
+                    this._playerModelFailedKey = key;
+                    this._playerModelKey = null;
+                }
+            })
+            .catch((error) => {
+                console.warn("Error cargando el modelo 3D del jugador", error);
+                if (this._playerModelKey === key) {
+                    this._playerModelFailedKey = key;
+                    this._playerModelKey = null;
+                }
+            });
     }
 
 

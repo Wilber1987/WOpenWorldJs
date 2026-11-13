@@ -182,8 +182,66 @@ export class CharacterModel {
          */
         this.CharacterActive = undefined;
 
+        /**
+         * Modelo 3D opcional exportado desde Blender (.glb / .gltf).
+         *
+         * Puede ser una ruta simple:
+         *   model3d = "Media/assets/models/heero.glb"
+         *
+         * O un objeto de configuración:
+         *   model3d = {
+         *       url: "Media/assets/models/heero.glb",
+         *       height: 3,          // altura final en el mundo
+         *       scale: 1,           // multiplicador extra
+         *       yOffset: 0,         // desplazamiento vertical
+         *       rotationY: 0,       // giro correctivo (radianes) si no mira a +Z
+         *       animations: { idle: "Idle", walk: "Walk", attack: "Attack" }
+         *   }
+         *
+         * Si está definido, el motor 3D lo usa en lugar del sprite.
+         * @type {string | {url: string, height?: number, scale?: number, yOffset?: number, rotationY?: number, animations?: Object.<string, string>, castShadow?: boolean} | null}
+         */
+        this.model3d = props?.model3d ?? null;
+
         this.floatingMessage = null;
         this.battle_direction = "left";
+    }
+
+    /**
+     * ¿Este personaje tiene un modelo 3D (Blender) cargado?
+     * Si devuelve `true`, los renderizadores 3D cargan el modelo en lugar del sprite.
+     * @returns {boolean}
+     */
+    Is3DModel() {
+        return this.model3d != null && this.model3d !== "";
+    }
+
+    /**
+     * Devuelve la configuración normalizada del modelo 3D.
+     * @returns {{url: string, height?: number, scale?: number, yOffset?: number, rotationY?: number, animations?: Object.<string, string>, castShadow?: boolean} | null}
+     */
+    getModel3DConfig() {
+        const model = this.model3d;
+        if (!model) return null;
+
+        if (typeof model === "string") {
+            const url = model.trim();
+            return url.length > 0 ? { url } : null;
+        }
+
+        if (typeof model === "object" && typeof model.url === "string" && model.url.length > 0) {
+            return { ...model };
+        }
+
+        return null;
+    }
+
+    /**
+     * Asigna (o quita, pasando null) el modelo 3D en tiempo de ejecución.
+     * @param {string | {url: string, height?: number, scale?: number, yOffset?: number, rotationY?: number, animations?: Object.<string, string>, castShadow?: boolean} | null} model3d
+     */
+    SetModel3D(model3d) {
+        this.model3d = model3d;
     }
 
     RegisterWordMapCharacter = async (isFullPerspective = this.isFullPerspective) => {
@@ -470,6 +528,14 @@ export class CharacterModel {
             this.animFrame = 0;
             this.animTimer = 0;
         }
+
+        // 🧊 Si el personaje usa un modelo 3D, la animación la resuelve
+        // el AnimationMixer del modelo; aquí solo se sincroniza el estado.
+        if (typeof this.Is3DModel === "function" && this.Is3DModel()) {
+            this.animTimer = 0;
+            return;
+        }
+
         // @ts-ignore
         const fps = this.animFPS[this.state] ?? 25;
         const frameTime = 1 / fps;

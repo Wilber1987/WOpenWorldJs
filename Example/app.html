@@ -4,6 +4,15 @@
 <head>
   <title>Visual Novel JS</title>
   <link rel="stylesheet" href="../WOpenWorldJs/Core/app.css">
+  <!-- Addons de Three.js (GLTFLoader) requieren el especificador "three". -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
 
 </head>
 
